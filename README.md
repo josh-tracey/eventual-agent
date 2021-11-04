@@ -1,6 +1,6 @@
 # Eventual Agent
 
-Just a Go PubSub Websocket Server, that expects published events to be JSON CloudEvents.
+Just a Go PubSub Websocket Server
 
 
 CloudEvents.io
