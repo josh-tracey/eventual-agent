@@ -11,7 +11,7 @@ type Message interface {
 type PublishEvent struct {
 	Type     string        `json:"type"`
 	Channels []interface{} `json:"channels"`
-	Event    ReactiveEvent `json:"event"`
+	Event    CloudEvent    `json:"event"`
 }
 
 type SubscribeMessage struct {
@@ -23,7 +23,7 @@ func (p PublishEvent) isMessage() {}
 
 func (p SubscribeMessage) isMessage() {}
 
-type ReactiveEvent struct {
+type CloudEvent struct {
 	Id              string                 `json:"id"`
 	Source          string                 `json:"source"`
 	Type            string                 `json:"type"`
@@ -47,7 +47,7 @@ type PublishRequest struct {
 func NewPublishEvent(m map[string]interface{}) *PublishEvent {
 	return &PublishEvent{
 		Channels: m["channels"].([]interface{}),
-		Event:    m["event"].(ReactiveEvent),
+		Event:    m["event"].(CloudEvent),
 	}
 }
 
@@ -76,7 +76,7 @@ func (c *Client) NewPublishRequest(m map[string]interface{}) *PublishRequest {
 		PublishEvent: PublishEvent{
 			Type:     m["type"].(string),
 			Channels: m["channels"].([]interface{}),
-			Event: ReactiveEvent{
+			Event: CloudEvent{
 				Id:              string(event["id"].(string)),
 				Source:          string(event["source"].(string)),
 				Type:            string(event["type"].(string)),
