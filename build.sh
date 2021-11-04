@@ -1,0 +1,1 @@
+go build -o build/eventual-broker src/main.go
