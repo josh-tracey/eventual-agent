@@ -1,1 +1,1 @@
-go build -o build/server src/main.go
+go build -o build/eventual-agent src/main.go
