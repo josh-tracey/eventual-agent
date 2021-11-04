@@ -81,7 +81,7 @@ func (c *Client) NewPublishRequest(m map[string]interface{}) *PublishRequest {
 				Source:          string(event["source"].(string)),
 				Type:            string(event["type"].(string)),
 				Data:            data,
-				SpecVersion:     "1.0",
+				SpecVersion:     "1.0.1",
 				DataContentType: "application/json",
 				Time:            int(time.Now().Unix()),
 				Meta:            meta,
