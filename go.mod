@@ -1,4 +1,4 @@
-module adriftdev.com/eventual-agent
+module github.com/josh-tracey/eventual-agent
 
 go 1.17
 

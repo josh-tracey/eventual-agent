@@ -4,8 +4,8 @@ import (
 	"encoding/json"
 	"time"
 
-	"adriftdev.com/eventual-agent/src/profile"
 	"github.com/gorilla/websocket"
+	"github.com/josh-tracey/eventual-agent/src/profile"
 )
 
 type Client struct {

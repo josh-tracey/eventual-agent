@@ -4,8 +4,8 @@ import (
 	"sync"
 	"time"
 
-	"adriftdev.com/eventual-agent/src/logging"
-	"adriftdev.com/eventual-agent/src/profile"
+	"github.com/josh-tracey/eventual-agent/src/logging"
+	"github.com/josh-tracey/eventual-agent/src/profile"
 )
 
 type Pool struct {
