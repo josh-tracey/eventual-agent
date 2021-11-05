@@ -70,7 +70,7 @@ Decided *Option 2*, as I dont care about looking up all subscriptions for a spec
 but care about fast lookup of all client subscribed to a specific channel for quick publishing.
 
 #### Implementation
-Written in golang for minimal footprint and faster processing
+Written in golang for simplicity, minimal footprint and faster processing
 
 ```go
 type PublishEvent struct {
