@@ -24,7 +24,7 @@ interface SubscribeMessage extends EventualMessage {
 // Format of a publish message payload
 interface PublishMessage extends EventualMessage {
   channels: string | string[]
-  event: IReactiveEvent
+  event: ICloudEvent
 }
 
 interface ICloudEvent<T = any> {
@@ -76,7 +76,7 @@ Written in golang for minimal footprint and faster processing
 type PublishEvent struct {
 	Type     string        `json:"type"`
 	Channels []interface{} `json:"channels"`
-	Event    ReactiveEvent `json:"event"`
+	Event    CloudEvent `json:"event"`
 }
 
 type SubscribeMessage struct {
