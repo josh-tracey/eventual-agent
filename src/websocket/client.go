@@ -14,12 +14,17 @@ type Client struct {
 	Pool *Pool
 }
 
+var (
+	writeWait = 10 * time.Second
+)
+
 func (c *Client) Send(data interface{}) chan error {
 
 	errChan := make(chan error, 4)
 
 	go func() {
 		defer profile.Duration(*c.Pool.Logging, time.Now(), "client.Send")
+		c.Conn.SetWriteDeadline(time.Now().Add(writeWait))
 		errChan <- c.Conn.WriteJSON(data)
 	}()
 
@@ -31,6 +36,9 @@ func getData(c Client) (map[string]interface{}, error) {
 
 	_, p, err := c.Conn.ReadMessage()
 	if err != nil {
+		if websocket.IsUnexpectedCloseError(err, websocket.CloseGoingAway, websocket.CloseAbnormalClosure) {
+			c.Pool.Logging.Warn("%v", err)
+		}
 		return nil, err
 	}
 	var data map[string]interface{}
@@ -42,6 +50,7 @@ func getData(c Client) (map[string]interface{}, error) {
 	}
 	return data, nil
 }
+
 func dispatch(c Client, data map[string]interface{}) {
 	defer profile.Duration(*c.Pool.Logging, time.Now(), "dispatch")
 
@@ -68,7 +77,6 @@ func (c *Client) Read() {
 		data, err := getData(*c)
 		if err != nil {
 			c.Pool.Logging.Error(err.Error())
-			return
 		}
 		dispatch(*c, data)
 	}

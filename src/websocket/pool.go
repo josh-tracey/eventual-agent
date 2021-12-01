@@ -23,14 +23,15 @@ var (
 
 func NewPool(logger *logging.Logger) *Pool {
 	return &Pool{
-		Subcribe:       make(chan SubscribeRequest, 20),
-		Unsubscribe:    make(chan SubscribeRequest, 20),
-		UnsubscribeAll: make(chan SubscribeRequest, 20),
-		Publish:        make(chan PublishRequest, 20),
+		Subcribe:       make(chan SubscribeRequest),
+		Unsubscribe:    make(chan SubscribeRequest),
+		UnsubscribeAll: make(chan SubscribeRequest),
+		Publish:        make(chan PublishRequest),
 		Channels:       make(map[string][]*Client),
 		Logging:        logger,
 	}
 }
+
 func (p *Pool) channelHasClient(channel string, client *Client) (chan bool, chan int) {
 
 	var found chan bool = make(chan bool)
@@ -51,6 +52,7 @@ func (p *Pool) channelHasClient(channel string, client *Client) (chan bool, chan
 
 	return found, index
 }
+
 func (p *Pool) removeClientFromChannel(channel string, client *Client) chan []*Client {
 
 	var result chan []*Client
@@ -74,8 +76,8 @@ func (p *Pool) removeClientFromChannel(channel string, client *Client) chan []*C
 
 	return result
 }
-func (p *Pool) removeClientFromAllChannels(client *Client) {
 
+func (p *Pool) removeClientFromAllChannels(client *Client) {
 	defer func() {
 		channelMutex.Unlock()
 		profile.Duration(*p.Logging, time.Now(), "removeClientFromAllChannels")
@@ -91,6 +93,7 @@ func (p *Pool) removeClientFromAllChannels(client *Client) {
 		}
 	}
 }
+
 func remove(s []*Client, i int) []*Client {
 	s[i] = s[len(s)-1]
 	return s[:len(s)-1]
@@ -109,44 +112,49 @@ func (p *Pool) Start() {
 				}
 				for i, client := range p.Channels[channelName.(string)] {
 					if err := <-client.Send(r.Event); err != nil {
+						channelMutex.Lock()
 						p.Logging.Error(err.Error())
 						p.Channels[channelName.(string)] = remove(p.Channels[channelName.(string)], i)
+						channelMutex.Unlock()
 					}
 				}
 			}
 			for i, client := range p.Channels["global"] {
 				if err := <-client.Send(r.Event); err != nil {
+					channelMutex.Lock()
 					p.Logging.Error(err.Error())
 					p.Channels["global"] = remove(p.Channels["global"], i)
+					channelMutex.Unlock()
 				}
 			}
 
 		case r := <-p.Subcribe:
+			channelMutex.Lock()
 			for i := range r.Channels {
 				func(channel interface{}) {
-					channelMutex.Lock()
 					found, _ := p.channelHasClient(channel.(string), r.Client)
 					b := <-found
 					if !b {
 						p.Logging.Debug("Adding client %s to channel: %s", r.Client.ID, channel)
 						p.Channels[channel.(string)] = append(p.Channels[channel.(string)], r.Client)
 					}
-					channelMutex.Unlock()
 				}(r.Channels[i])
+				channelMutex.Unlock()
 			}
 
 		case r := <-p.Unsubscribe:
+			channelMutex.Lock()
 			for _, channel := range r.Channels {
-				p.Logging.Debug("Unsubscribing client %s from channel: %s", r.Client.ID)
+				p.Logging.Debug("Unsubscribing client %s from channel: %s", r.Client.ID, channel)
 				result := p.removeClientFromChannel(channel.(string), r.Client)
 				p.Channels[channel.(string)] = <-result
 			}
+			channelMutex.Unlock()
 
-		// This is potentially slow, if large amount of channels active in memory.
+		// This is potentially slow, if large amount of channels active in memory. O(n^2)
 		case r := <-p.UnsubscribeAll:
 			p.Logging.Debug("Unsubscribing client %s from all channels", r.Client.ID)
 			p.removeClientFromAllChannels(r.Client)
-
 		}
 	}
 }
