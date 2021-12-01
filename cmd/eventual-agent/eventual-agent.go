@@ -5,8 +5,8 @@ import (
 	"io/ioutil"
 	"net/http"
 
-	"github.com/josh-tracey/eventual-agent/src/logging"
-	"github.com/josh-tracey/eventual-agent/src/websocket"
+	"github.com/josh-tracey/eventual-agent/pkg/logging"
+	"github.com/josh-tracey/eventual-agent/pkg/websocket"
 )
 
 func serveWs(pool *websocket.Pool, w http.ResponseWriter, r *http.Request) {
