@@ -5,7 +5,7 @@ import (
 	"time"
 
 	"github.com/gorilla/websocket"
-	"github.com/josh-tracey/eventual-agent/src/profile"
+	"github.com/josh-tracey/eventual-agent/pkg/profile"
 )
 
 type Client struct {
