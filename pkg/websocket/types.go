@@ -1,7 +1,7 @@
 package websocket
 
 import (
-	"time"
+  "time"
 )
 
 type Message interface {
