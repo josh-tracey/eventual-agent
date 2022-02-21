@@ -39,9 +39,9 @@ func (l *Logger) Error(msg string, a ...interface{}) {
 func getLogLevel() int8 {
 	switch logLevel {
 	case "error":
-		return 10
+		return 50
 	case "warn":
-		return 20
+		return 40
 	case "info":
 		return 30
 	case "debug":
@@ -74,24 +74,24 @@ func (l *Logger) Start() {
 			}
 
 		case msg := <-l.debug:
-			if l.LogLevel >= 40 {
+      if l.LogLevel == 20  {
 				fmt.Printf("%sdebug: %s%s\n", FgBlue, Reset, msg)
 			}
 
 		case msg := <-l.info:
-			if l.LogLevel >= 30 {
+			if l.LogLevel >= 20 && l.LogLevel <= 30 {
 				fmt.Printf("%sinfo: %s%s\n", FgGreen, Reset, msg)
 			}
 
 		case msg := <-l.warn:
-			if l.LogLevel >= 20 {
+			if l.LogLevel >= 20 && l.LogLevel <= 40 {
 				fmt.Printf("%swarn: %s%s\n", FgYellow, Reset, msg)
 			}
 
 		case msg := <-l.error:
-			if l.LogLevel >= 10 {
+			if l.LogLevel >= 20 && l.LogLevel <= 50 {
 				fmt.Printf("%serror: %s%s\n", FgRed, Reset, msg)
-			}
+      }
 		}
 	}
 }
