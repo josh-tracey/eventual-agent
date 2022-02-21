@@ -2,7 +2,6 @@ package main
 
 import (
 	"fmt"
-	"io/ioutil"
 	"net/http"
 
 	"github.com/josh-tracey/eventual-agent/pkg/logging"
@@ -10,51 +9,26 @@ import (
 )
 
 func serveWs(pool *websocket.Pool, w http.ResponseWriter, r *http.Request) {
-
-	conn, err := websocket.Upgrade(w, r)
+	ws, err := websocket.Upgrade(w, r)
 	if err != nil {
 		fmt.Fprintf(w, "%+v", err)
-		pool.Logging.Warn((err.Error()))
+		pool.Logging.Warn("websocket upgrade failed: %+v", (err.Error()))
 	}
 
-	client := &websocket.Client{
-		ID:   r.RemoteAddr,
-		Conn: conn,
-		Pool: pool,
-	}
-
-	client.Read()
-}
-
-func handlePublishPostRequest(pool *websocket.Pool, w http.ResponseWriter, r *http.Request) {
-	body, err := ioutil.ReadAll(r.Body)
-
-	if err != nil {
-		pool.Logging.Error(err.Error())
-	}
-	//Convert the body to type string
-	sb := string(body)
-	pool.Logging.Debug(sb)
-	pool.Publish <- websocket.PublishRequest{}
-	w.WriteHeader(202)
+	client := websocket.NewClient(r.RemoteAddr, ws, pool)
+	pool.Logging.Trace("Received Connection from %+v", client)
+	go client.WriteListen()
+	client.ReadListen()
 }
 
 func setupRoutes(l *logging.Logger) {
 	pool := websocket.NewPool(l)
-	for i := 1; i <= 8; i++ {
+	//go pool.CacheManager()
+	for i := 1; i <= 32; i++ {
 		go pool.Start()
 	}
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		serveWs(pool, w, r)
-	})
-
-	http.HandleFunc("/publish", func(w http.ResponseWriter, r *http.Request) {
-		switch r.Method {
-		case "POST":
-			handlePublishPostRequest(pool, w, r)
-		default:
-			w.WriteHeader(403)
-		}
 	})
 }
 

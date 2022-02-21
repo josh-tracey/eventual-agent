@@ -1,30 +1,35 @@
 package websocket
 
 import (
-  "time"
+	"fmt"
+	"time"
 )
 
+// Message - Message duck type
 type Message interface {
 	isMessage()
 }
 
+// PublishEvent - Publish incoming message type
 type PublishEvent struct {
-	Type     string        `json:"type"`
-	Channels []interface{} `json:"channels"`
-	Event    CloudEvent    `json:"event"`
+	Type     string     `json:"type"`
+	Channels []string   `json:"channels"`
+	Event    CloudEvent `json:"event"`
 }
 
+// SubscribeMessage - Subscribe incoming message type
 type SubscribeMessage struct {
-	Type     string        `json:"type"`
-	Channels []interface{} `json:"channels"`
+	Type     string   `json:"type"`
+	Channels []string `json:"channels"`
 }
 
 func (p PublishEvent) isMessage() {}
 
 func (p SubscribeMessage) isMessage() {}
 
+// CloudEvent - https://github.com/cloudevents/spec/blob/v1.0.1/spec.md
 type CloudEvent struct {
-	Id              string                 `json:"id"`
+	ID              string                 `json:"id"`
 	Source          string                 `json:"source"`
 	Type            string                 `json:"type"`
 	Data            map[string]interface{} `json:"data"`
@@ -44,16 +49,26 @@ type PublishRequest struct {
 	Client *Client
 }
 
+func convertToStringSlice(input []interface{}) []string {
+	s := make([]string, len(input))
+	for i, v := range input {
+		s[i] = fmt.Sprint(v)
+	}
+	return s
+}
+
 func NewPublishEvent(m map[string]interface{}) *PublishEvent {
+	channels, _ := m["channels"].([]interface{})
 	return &PublishEvent{
-		Channels: m["channels"].([]interface{}),
+		Channels: convertToStringSlice(channels),
 		Event:    m["event"].(CloudEvent),
 	}
 }
 
 func NewSubscribeMessage(m map[string]interface{}) *SubscribeMessage {
+	channels, _ := m["channels"].([]interface{})
 	return &SubscribeMessage{
-		Channels: m["channels"].([]interface{}),
+		Channels: convertToStringSlice(channels),
 	}
 }
 
@@ -71,13 +86,14 @@ func (c *Client) NewPublishRequest(m map[string]interface{}) *PublishRequest {
 			meta[k] = v
 		}
 	}
+	channels, _ := m["channels"].([]interface{})
 
 	return &PublishRequest{
 		PublishEvent: PublishEvent{
 			Type:     m["type"].(string),
-			Channels: m["channels"].([]interface{}),
+			Channels: convertToStringSlice(channels),
 			Event: CloudEvent{
-				Id:              string(event["id"].(string)),
+				ID:              string(event["id"].(string)),
 				Source:          string(event["source"].(string)),
 				Type:            string(event["type"].(string)),
 				Data:            data,
@@ -92,10 +108,12 @@ func (c *Client) NewPublishRequest(m map[string]interface{}) *PublishRequest {
 }
 
 func (c *Client) NewSubscribeRequest(m map[string]interface{}) *SubscribeRequest {
+	c.Pool.Logging.Trace("NewSubscribeRequest: %+v", m)
+	channels, _ := m["channels"].([]interface{})
 	return &SubscribeRequest{
 		SubscribeMessage: SubscribeMessage{
 			Type:     m["type"].(string),
-			Channels: m["channels"].([]interface{}),
+			Channels: convertToStringSlice(channels),
 		},
 		Client: c,
 	}
