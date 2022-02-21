@@ -41,35 +41,6 @@ interface ICloudEvent<T = any> {
   [key: string]: string | number | ObjectLiteral | undefined
 }
 ```
-### Choices
----
-#### Option 1:
-
-Client owned subscriptions?
-```
-{ [clientId]: [subscriptions] } 
-```
- ###### Pros:
- - Quick lookup for a specific clients subscriptions 
- ###### Cons:
- - Slower to check if client is subscribed to a specific channel or not 
----
- #### Option 2:
-
-Clients subscribe to channels?
-```
-{  [channelName]: [clientIds]  }
-```
-###### Pros:
-- Quick to lookup all clients subscribed to a channel 
-###### Cons:
-- Slow to check all subscribed channels to by a client 
-
----
-
-#### Decision
-Decided *Option 2*, as I dont care about looking up all subscriptions for a specific client,
-but care about fast lookup of all client subscribed to a specific channel for quick publishing.
 
 #### Implementation
 Written in golang for simplicity, minimal footprint and faster processing
