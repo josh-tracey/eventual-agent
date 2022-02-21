@@ -8,153 +8,126 @@ import (
 	"github.com/josh-tracey/eventual-agent/pkg/profile"
 )
 
+// TODO: Cache Manager
+var (
+	sublock  sync.Mutex
+	snapshot map[string]*Sub = make(map[string]*Sub)
+	channels map[string]*Client
+	timer    = time.NewTicker(120 * time.Second)
+)
+
+// Pool - Shared worker pool resources
 type Pool struct {
-	Subcribe       chan SubscribeRequest
+	Subscribe      chan SubscribeRequest
 	Unsubscribe    chan SubscribeRequest
 	UnsubscribeAll chan SubscribeRequest
 	Publish        chan PublishRequest
-	Channels       map[string][]*Client
+	Subs           map[string]*Sub
 	Logging        *logging.Logger
 }
 
-var (
-	channelMutex sync.Mutex
-)
-
+// NewPool - Creates new instance of Pool
 func NewPool(logger *logging.Logger) *Pool {
 	return &Pool{
-		Subcribe:       make(chan SubscribeRequest),
+		Subscribe:      make(chan SubscribeRequest),
 		Unsubscribe:    make(chan SubscribeRequest),
 		UnsubscribeAll: make(chan SubscribeRequest),
 		Publish:        make(chan PublishRequest),
-		Channels:       make(map[string][]*Client),
+		Subs:           make(map[string]*Sub),
 		Logging:        logger,
 	}
 }
 
-func (p *Pool) channelHasClient(channel string, client *Client) (chan bool, chan int) {
-
-	var found chan bool = make(chan bool)
-	var index chan int = make(chan int)
-
-	go func() {
-		defer profile.Duration(*p.Logging, time.Now(), "channelHasClient")
-		for i, cli := range p.Channels[channel] {
-			if cli == client {
-				found <- true
-				index <- i
-				return
-			}
-		}
-		found <- false
-		index <- -1
-	}()
-
-	return found, index
+// TakeSnapshot - Takes Snapshot of Current State of Subscriptions. TODO: CacheManager
+func (p *Pool) TakeSnapshot() {
+	//sublock.lock()
+	//for _, _ := range p.subs {
+	////
+	//}
+	//sublock.unlock()
 }
 
-func (p *Pool) removeClientFromChannel(channel string, client *Client) chan []*Client {
+//CacheManager - Managers servers cache TODO: CacheManager
+func (p *Pool) CacheManager() {
 
-	var result chan []*Client
+	p.Logging.Info("Cache Manager Started...")
 
-	go func() {
-		defer func() {
-			channelMutex.Unlock()
-			profile.Duration(*p.Logging, time.Now(), "removeClientFromChannel")
-		}()
-		channelMutex.Lock()
-		clients := p.Channels[channel]
-
-		for i, cli := range clients {
-			if cli == client {
-				result <- remove(clients, i)
-				return
-			}
-		}
-		result <- p.Channels[channel]
-	}()
-
-	return result
-}
-
-func (p *Pool) removeClientFromAllChannels(client *Client) {
-	defer func() {
-		channelMutex.Unlock()
-		profile.Duration(*p.Logging, time.Now(), "removeClientFromAllChannels")
-	}()
-
-	channelMutex.Lock()
-	for channelName := range p.Channels {
-
-		for i, cli := range p.Channels[channelName] {
-			if cli == client {
-				p.Channels[channelName] = remove(p.Channels[channelName], i)
-			}
+	for {
+		select {
+		case <-timer.C:
+			p.Logging.Trace("CacheManager::takesnapshot")
+			p.TakeSnapshot()
+			p.Logging.Debug("CacheManager::snapshot: %v", snapshot)
 		}
 	}
 }
 
-func remove(s []*Client, i int) []*Client {
-	s[i] = s[len(s)-1]
-	return s[:len(s)-1]
-}
-
+// Start - Go Routine runs worker with shared Pool resources.
 func (p *Pool) Start() {
+
+	defer func() {
+		if err := recover(); err != nil {
+			p.Logging.Error("unhandled exception in pool: %+v", err)
+		}
+		p.Logging.Warn("Worker stopped")
+		p.Start()
+	}()
+
 	for {
 		select {
 
 		case r := <-p.Publish:
-			// This is potentially sluggish if publishing to many channels
-			p.Logging.Debug("Received publish event for channel '%s'", r.Event.Source)
-			for _, channelName := range r.Channels {
-				if channelName == "global" {
-					continue
-				}
-				for i, client := range p.Channels[channelName.(string)] {
-					if err := <-client.Send(r.Event); err != nil {
-						channelMutex.Lock()
-						p.Logging.Error(err.Error())
-						p.Channels[channelName.(string)] = remove(p.Channels[channelName.(string)], i)
-						channelMutex.Unlock()
+			start := time.Now()
+			p.Logging.Trace("Received publish event for channel '%s'", r.Event.Source)
+			//TODO: Replace with more efficient publishing method... O(x^4) TODO: CacheManager
+			for _, sub := range p.Subs {
+				for _, channel := range r.Channels {
+					for _, subChan := range sub.channels {
+						if channel == subChan || subChan == "global" {
+							for _, client := range sub.clients {
+								if !client.closed {
+									p.Logging.Trace("SENDING... %v", client.ID)
+									client.Send <- r.Event
+								}
+							}
+						}
 					}
 				}
 			}
-			for i, client := range p.Channels["global"] {
-				if err := <-client.Send(r.Event); err != nil {
-					channelMutex.Lock()
-					p.Logging.Error(err.Error())
-					p.Channels["global"] = remove(p.Channels["global"], i)
-					channelMutex.Unlock()
-				}
-			}
+			profile.Duration(*p.Logging, start, "Pool::Start::Publish")
 
-		case r := <-p.Subcribe:
-			channelMutex.Lock()
-			for i := range r.Channels {
-				func(channel interface{}) {
-					found, _ := p.channelHasClient(channel.(string), r.Client)
-					b := <-found
-					if !b {
-						p.Logging.Debug("Adding client %s to channel: %s", r.Client.ID, channel)
-						p.Channels[channel.(string)] = append(p.Channels[channel.(string)], r.Client)
-					}
-				}(r.Channels[i])
-				channelMutex.Unlock()
+		case r := <-p.Subscribe:
+			sublock.Lock()
+			p.Logging.Info("Received subscribe event for channels '%s'", r.Channels)
+			if sub, ok := p.Subs[r.Client.ID]; ok { //O(x^2)
+				//	check / update
+				sub.AddNewChannels(r.Channels) // O(x^2)
+				sub.AddClient(r.Client)        // O(1)
+			} else { // O(1)
+				//	create sub
+				sub := NewSub(r.Client.ID, r.Channels, r.Client)
+				p.Subs[r.Client.ID] = sub
 			}
+			p.Logging.Trace("Subs '%v'", p.Subs)
+			sublock.Unlock()
 
 		case r := <-p.Unsubscribe:
-			channelMutex.Lock()
-			for _, channel := range r.Channels {
-				p.Logging.Debug("Unsubscribing client %s from channel: %s", r.Client.ID, channel)
-				result := p.removeClientFromChannel(channel.(string), r.Client)
-				p.Channels[channel.(string)] = <-result
-			}
-			channelMutex.Unlock()
+			sublock.Lock()
+			p.Logging.Trace("Received unsubscribe event for channels '%s'", r.Channels)
 
-		// This is potentially slow, if large amount of channels active in memory. O(n^2)
+			if sub, ok := p.Subs[r.Client.ID]; ok { //O(x^2)
+				sub.RemoveChannels(r.Channels) // O(x^2)
+				if len(sub.channels) == 0 {
+					delete(p.Subs, r.Client.ID)
+				}
+			}
+			sublock.Unlock()
+
 		case r := <-p.UnsubscribeAll:
-			p.Logging.Debug("Unsubscribing client %s from all channels", r.Client.ID)
-			p.removeClientFromAllChannels(r.Client)
+			sublock.Lock()
+			p.Logging.Trace("Received UnsubscribeAll for %s", r.Client.ID)
+			delete(p.Subs, r.Client.ID) // O(1)
+			sublock.Unlock()
 		}
 	}
 }
