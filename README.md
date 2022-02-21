@@ -1,7 +1,5 @@
 ### Eventual Agent
 
-[![BCH compliance](https://bettercodehub.com/edge/badge/josh-tracey/eventual-agent?branch=master)](https://bettercodehub.com/)
-
 Just a PubSub Websocket Server
 
 The eventual agent allows cluster local apps to subscribe and publish over network.
