@@ -78,7 +78,7 @@ func (p *Pool) Start() {
 
 		case r := <-p.Publish:
 			start := time.Now()
-			p.Logging.Trace("Received publish event for channel '%s'", r.Event.Source)
+			p.Logging.Trace("Received publish event for channel '%s'", r.Event.Type)
 			//TODO: Replace with more efficient publishing method... O(x^4) TODO: CacheManager
 			for _, sub := range p.Subs {
 				for _, channel := range r.Channels {
