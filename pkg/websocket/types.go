@@ -88,9 +88,9 @@ func (c *Client) NewPublishRequest(m map[string]interface{}) *PublishRequest {
 	}
 	channels, _ := m["channels"].([]interface{})
 
-	subject, snil := event["subject"].(string)
+	subject, ok := event["subject"].(string)
 
-	if snil {
+	if !ok {
 		subject = "*"
 	}
 
