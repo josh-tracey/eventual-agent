@@ -11,10 +11,12 @@ func main() {
 
 	var subs ports.SubjectPort
 	var ws ports.WebSocketPort
-	subs = core.NewAdapter()
+	var logger *logging.Logger
+
+	logger = logging.NewLogger()
+	subs = core.NewAdapter(logger)
 	ws = websocket.NewAdapter(subs)
 
-	logger := logging.NewLogger()
 	go logger.Start()
-	ws.ListenAndServe(logger)
+	ws.ListenAndServe()
 }

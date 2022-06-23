@@ -54,14 +54,13 @@ func getLogLevel() int8 {
 }
 
 func NewLogger() *Logger {
-
 	return &Logger{
 		LogLevel: getLogLevel(),
-		trace:    make(chan string, 32),
-		debug:    make(chan string, 32),
-		info:     make(chan string, 32),
-		error:    make(chan string, 32),
-		warn:     make(chan string, 32),
+		trace:    make(chan string, 4),
+		debug:    make(chan string, 4),
+		info:     make(chan string, 4),
+		error:    make(chan string, 4),
+		warn:     make(chan string, 4),
 	}
 }
 

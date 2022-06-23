@@ -4,27 +4,37 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/josh-tracey/eventual-agent/internal/logging"
+	"github.com/josh-tracey/eventual-agent/internal/adapters/core"
 	"github.com/josh-tracey/eventual-agent/internal/ports"
 )
 
 type Adapter struct {
-	core ports.SubjectPort
+	core *core.Adapter
 }
 
-func NewAdapter(core ports.SubjectPort) *Adapter {
+func NewAdapter(c ports.SubjectPort) *Adapter {
+	value, ok := c.(*core.Adapter)
+	if !ok {
+		c.GetLogger().Error("websocket::Adapter.NewAdapter => Failed to cast c to *core.Adapter")
+	}
 	return &Adapter{
-		core: core,
+		core: value,
 	}
 }
 
-func (a *Adapter) ListenAndServe(logger *logging.Logger) {
-	setupRoutes(logger)
-	logger.Info("Listening on 0.0.0.0:8080")
+func (a *Adapter) ListenAndServe() {
+	setupRoutes(a)
+	a.core.GetLogger().Info("Listening on 0.0.0.0:8080")
 	http.ListenAndServe(":8080", nil)
 }
 
 func serveWs(pool *Pool, w http.ResponseWriter, r *http.Request) {
+	defer func() {
+		if r := recover(); r != nil {
+			pool.Logging.Error("websocket::Pool.serveWs => %s", r)
+		}
+	}()
+
 	ws, err := Upgrade(w, r)
 	if err != nil {
 		fmt.Fprintf(w, "%+v", err)
@@ -37,9 +47,8 @@ func serveWs(pool *Pool, w http.ResponseWriter, r *http.Request) {
 	client.ReadListen()
 }
 
-func setupRoutes(l *logging.Logger) {
-	pool := NewPool(l)
-	//go pool.CacheManager()
+func setupRoutes(a *Adapter) {
+	pool := NewPool(a.core)
 	for i := 1; i <= 32; i++ {
 		go pool.Start()
 	}

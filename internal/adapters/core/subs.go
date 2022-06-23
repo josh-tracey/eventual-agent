@@ -4,6 +4,7 @@ import (
 	"sync"
 
 	"github.com/google/uuid"
+	"github.com/josh-tracey/eventual-agent/internal/logging"
 )
 
 var (
@@ -11,7 +12,8 @@ var (
 )
 
 type Adapter struct {
-	Subs map[string]*sub
+	logger *logging.Logger
+	Subs   map[string]*sub
 }
 
 // Sub - Represents a Subscription
@@ -20,48 +22,78 @@ type sub struct {
 	clients []*string
 }
 
-func NewAdapter() *Adapter {
+func NewAdapter(logger *logging.Logger) *Adapter {
 	return &Adapter{
-		Subs: make(map[string]*sub),
+		logger: logger,
+		Subs:   make(map[string]*sub),
 	}
+}
+
+func (adapt *Adapter) GetLogger() *logging.Logger {
+	return adapt.logger
 }
 
 // GetSub - Thread Safe method of getting a Sub
 func (adapt *Adapter) GetSub(channel string) *sub {
+	defer func() {
+		if r := recover(); r != nil {
+			adapt.logger.Error("core::Adapter.GetSub => %s", r)
+		}
+		lock.Unlock()
+	}()
+
 	lock.Lock()
 	if _, ok := adapt.Subs[channel]; !ok {
 		adapt.Subs[channel] = newSub(channel, nil)
 	}
-	lock.Unlock()
+
 	return adapt.Subs[channel]
 }
 
 // Remove - Thread Safe method of removing a channel from Sub
 func (adapt *Adapter) Remove(channel string) {
+	defer func() {
+		if r := recover(); r != nil {
+			adapt.logger.Error("core::Adapter.Remove => %s", r)
+		}
+		lock.Unlock()
+	}()
+
 	lock.Lock()
 	delete(adapt.Subs, channel)
-	lock.Unlock()
 }
 
 func (adapt *Adapter) RemoveClientId(client string) {
+	defer func() {
+		if r := recover(); r != nil {
+			adapt.logger.Error("core::Adapter.RemoveClientId => %s", r)
+		}
+		lock.Unlock()
+	}()
+
 	lock.Lock()
 	var done chan bool = make(chan bool)
 	go func() {
 		for _, v := range adapt.Subs {
-			for i, clientId := range v.clients {
-				if clientId != nil && *clientId == client {
-					remove(v.clients, i)
-					done <- true
+			for _, clientId := range v.clients {
+				if clientId != nil {
+					v.RemoveClientId(*clientId)
 				}
 			}
 		}
+		done <- true
 		close(done)
 	}()
 	<-done
-	lock.Unlock()
 }
 
 func (adapt *Adapter) GetClients() []string {
+	defer func() {
+		if r := recover(); r != nil {
+			adapt.logger.Error("core::Adapter.GetClients => %s", r)
+		}
+	}()
+
 	var clients []string
 	for _, sub := range adapt.Subs {
 		clients = append(clients, sub.GetClients()...)
@@ -70,6 +102,12 @@ func (adapt *Adapter) GetClients() []string {
 }
 
 func (adapt *Adapter) AddClient(ID string, channels []string) string {
+	defer func() {
+		if r := recover(); r != nil {
+			adapt.logger.Error("core::Adapter.AddClients => %s", r)
+		}
+	}()
+
 	var client string
 	for _, channel := range channels {
 		sub := adapt.GetSub(channel)
@@ -79,8 +117,14 @@ func (adapt *Adapter) AddClient(ID string, channels []string) string {
 }
 
 func (adapt *Adapter) RemoveClient(ID string, channels []string) {
+	defer func() {
+		if r := recover(); r != nil {
+			adapt.logger.Error("core::Adapter.RemoveClient => %s", r)
+		}
+	}()
+
 	for _, channel := range channels {
-		adapt.GetSub(channel).RemoveClient(&ID)
+		adapt.GetSub(channel).RemoveClientId(ID)
 	}
 }
 
@@ -101,17 +145,6 @@ func (s *sub) AddClient(ID *string) string {
 	return id
 }
 
-// RemoveClient - Thread Safe method of removing a client from Sub
-func (s *sub) RemoveClient(ID *string) {
-	lock.Lock()
-	for index, subclient := range s.clients {
-		if *subclient == *ID {
-			s.clients = remove(s.clients, index)
-		}
-	}
-	lock.Unlock()
-}
-
 // GetClients - Thread Safe method of getting clients from Sub
 func (s *sub) GetClients() []string {
 	lock.Lock()
@@ -128,9 +161,9 @@ func (s *sub) GetClients() []string {
 // RemoveClientId - Thread Safe method of removing a client from Sub
 func (s *sub) RemoveClientId(client string) {
 	lock.Lock()
-	for index, subclient := range s.clients {
-		if *subclient == client {
-			s.clients = remove(s.clients, index)
+	for i, clientId := range s.clients {
+		if clientId != nil && *clientId == client {
+			remove(s.clients, i)
 		}
 	}
 	lock.Unlock()
