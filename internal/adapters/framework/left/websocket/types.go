@@ -2,7 +2,6 @@ package websocket
 
 import (
 	"fmt"
-	"time"
 )
 
 // Message - Message duck type
@@ -32,9 +31,10 @@ type CloudEvent struct {
 	ID              string                 `json:"id"`
 	Source          string                 `json:"source"`
 	Type            string                 `json:"type"`
+	Subject         string                 `json:"subject"`
 	Data            map[string]interface{} `json:"data"`
 	DataContentType string                 `json:"datacontenttype"`
-	Time            int                    `json:"time"`
+	Time            string                 `json:"time"`
 	SpecVersion     string                 `json:"specversion"`
 	Meta            map[string]interface{} `json:"meta"`
 }
@@ -88,6 +88,12 @@ func (c *Client) NewPublishRequest(m map[string]interface{}) *PublishRequest {
 	}
 	channels, _ := m["channels"].([]interface{})
 
+	subject, ok := event["subject"].(string)
+
+	if !ok {
+		subject = "*"
+	}
+
 	return &PublishRequest{
 		PublishEvent: PublishEvent{
 			Type:     m["type"].(string),
@@ -96,10 +102,11 @@ func (c *Client) NewPublishRequest(m map[string]interface{}) *PublishRequest {
 				ID:              string(event["id"].(string)),
 				Source:          string(event["source"].(string)),
 				Type:            string(event["type"].(string)),
+				Subject:         string(subject),
 				Data:            data,
-				SpecVersion:     "1.0",
+				SpecVersion:     string(event["specversion"].(string)),
 				DataContentType: "application/json",
-				Time:            int(time.Now().Unix()),
+				Time:            string(event["time"].(string)),
 				Meta:            meta,
 			},
 		},
