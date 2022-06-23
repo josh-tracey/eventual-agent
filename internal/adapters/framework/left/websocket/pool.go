@@ -48,12 +48,16 @@ func (p *Pool) Start() {
 
 		case r := <-p.Publish:
 			start := time.Now()
-			p.Logging.Trace("Received publish event for channel '%s'", r.Event.Type)
+			p.Logging.Trace("Received publish event for channel '%s'", r.Event)
 			for _, channel := range r.Channels {
 				for subChan, sub := range p.Subs.Subs {
 					if channel == subChan || subChan == "global" {
 						for _, client := range sub.GetClients() {
-							p.Logging.Debug("Publishing event to client %s", client)
+							c := p.clientsMap[client]
+							if !c.closed {
+								p.Logging.Debug("Publishing event to client %s, subscribed to channel %s", client, subChan)
+								c.Send <- r.Event
+							}
 						}
 					}
 				}

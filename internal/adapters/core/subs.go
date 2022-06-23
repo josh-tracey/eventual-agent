@@ -95,9 +95,10 @@ func newSub(id string, client *string) *sub {
 // AddClient - Thread Safe method of adding a client to Sub
 func (s *sub) AddClient(ID *string) string {
 	lock.Lock()
-	s.clients = append(s.clients, ID)
+	id := uuid.New().String()
+	s.clients = append(s.clients, &id)
 	lock.Unlock()
-	return uuid.New().String()
+	return id
 }
 
 // RemoveClient - Thread Safe method of removing a client from Sub
