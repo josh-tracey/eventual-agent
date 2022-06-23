@@ -11,7 +11,7 @@ The eventual agent allows cluster local apps to subscribe and publish over netwo
 
 #### Interface
 
-Typescript SDK [reactive-node/eventual-sdk](https://gitlab.com/adriftdev1/reactive-node/-/tree/master/packages/eventual-sdk)
+Typescript SDK [reactive-node/eventual-sdk](https://gitlab.com/adriftdev1/reactive-node/-/tree/master/packages/eventual-sdk) Coming soon!
 ```ts
 
 type Observable<T> = {
