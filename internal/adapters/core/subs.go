@@ -68,10 +68,8 @@ func (adapt *Adapter) RemoveClientId(client string) {
 		if r := recover(); r != nil {
 			adapt.logger.Error("core::Adapter.RemoveClientId => %s", r)
 		}
-		lock.Unlock()
 	}()
 
-	lock.Lock()
 	var done chan bool = make(chan bool)
 	go func() {
 		for _, v := range adapt.Subs {
