@@ -4,7 +4,7 @@ import (
 	"os"
 	"time"
 
-	"github.com/josh-tracey/eventual-agent/pkg/logging"
+	"github.com/josh-tracey/eventual-agent/internal/logging"
 )
 
 var profiling = os.Getenv("PROFILING")

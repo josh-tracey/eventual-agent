@@ -73,6 +73,12 @@ func NewSubscribeMessage(m map[string]interface{}) *SubscribeMessage {
 }
 
 func (c *Client) NewPublishRequest(m map[string]interface{}) *PublishRequest {
+	defer func() {
+		if r := recover(); r != nil {
+			c.Pool.Logging.Error("websocket::Client.NewPublishRequest => %s", r)
+		}
+	}()
+
 	event := m["event"].(map[string]interface{})
 	data := make(map[string]interface{})
 	for k, v := range event["data"].(map[string]interface{}) {
@@ -115,6 +121,12 @@ func (c *Client) NewPublishRequest(m map[string]interface{}) *PublishRequest {
 }
 
 func (c *Client) NewSubscribeRequest(m map[string]interface{}) *SubscribeRequest {
+	defer func() {
+		if r := recover(); r != nil {
+			c.Pool.Logging.Error("websocket::Client.NewSubscribeRequest => %s", r)
+		}
+	}()
+
 	c.Pool.Logging.Trace("NewSubscribeRequest: %+v", m)
 	channels, _ := m["channels"].([]interface{})
 	return &SubscribeRequest{

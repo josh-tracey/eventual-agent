@@ -5,11 +5,12 @@ import (
 	"time"
 
 	"github.com/gorilla/websocket"
-	"github.com/josh-tracey/eventual-agent/pkg/profile"
+	"github.com/josh-tracey/eventual-agent/internal/profile"
 )
 
 type Client struct {
 	ID     string
+	RefID  string
 	Conn   *websocket.Conn
 	Pool   *Pool
 	Send   chan interface{}
@@ -26,6 +27,13 @@ func NewClient(id string, conn *websocket.Conn, pool *Pool) *Client {
 }
 
 func (c *Client) close() {
+
+	defer func() {
+		if r := recover(); r != nil {
+			c.Pool.Logging.Error("websocket::Client.close => %s", r)
+		}
+	}()
+
 	if !c.closed {
 		if err := c.Conn.Close(); err != nil {
 			c.Pool.Logging.Debug("websocket was already closed: %+v", err)
@@ -47,6 +55,13 @@ var (
 )
 
 func dispatch(c *Client, data map[string]interface{}) {
+
+	defer func() {
+		if r := recover(); r != nil {
+			c.Pool.Logging.Error("websocket::Client.dispatch => %s", r)
+		}
+	}()
+
 	defer profile.Duration(*c.Pool.Logging, time.Now(), "Client::ReadListen::dispatch")
 
 	switch data["type"].(string) {
@@ -82,7 +97,7 @@ func (c *Client) WriteListen() {
 	ticker := time.NewTicker(PingPeriod)
 	defer func() {
 		if err := recover(); err != nil {
-
+			c.Pool.Logging.Error("websocket::Client.WriteListen => %s", err)
 		}
 		ticker.Stop()
 		c.close()
@@ -93,12 +108,12 @@ func (c *Client) WriteListen() {
 		case message, ok := <-c.Send:
 			if !ok {
 				if err := write(websocket.CloseMessage, []byte{}, false); err != nil {
-					//c.Pool.Logging.Debug("socket already closed: %+v", err)
+					c.Pool.Logging.Trace("socket already closed: %+v", err)
 					panic(err)
 				}
 			}
 			if err := write(websocket.TextMessage, message, true); err != nil {
-				//c.Pool.Logging.Debug("failed to write socket message: %+v", err)
+				c.Pool.Logging.Trace("failed to write socket message: %+v", err)
 				panic(err)
 			}
 		case <-ticker.C:
@@ -114,9 +129,9 @@ func (c *Client) ReadListen() {
 
 	defer func() {
 		if err := recover(); err != nil {
-			// Do nothing :P
+			c.Pool.Logging.Error("websocket::Client.ReadListen => %s", err)
 		}
-		//c.close()
+		c.close()
 	}()
 	c.Conn.SetReadLimit(MaxMessageSize)
 	if err := c.Conn.SetReadDeadline(time.Now().Add(PongWait)); err != nil {
