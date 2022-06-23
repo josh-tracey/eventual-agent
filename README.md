@@ -11,33 +11,31 @@ The eventual agent allows cluster local apps to subscribe and publish over netwo
 
 #### Interface
 
+Typescript SDK (reactive-node/eventual-sdk)[]
 ```ts
-interface EventualMessage {
-  type: "publish" | "subscribe" | "unsubscribe"
+
+type Observable<T> = {
+  next: (message: T) => Promise<void>
+  complete: (event: CompleteEvent) => Promise<void>
+  error: (error: Error) => void
 }
 
-// Payload for both subscribing and unsubscribing to/from channels
-interface SubscribeMessage extends EventualMessage {
-  channels: string | string[]
+createEventualClient = (
+  url: string,
+  config?: IEventualClientOptions
+):  {
+    publish: async <T>(channels: string | string[], data: ICloudEvent<T>), 
+    subscribe: <T>( channels: string | string[], obs: Observable<ICloudEvent<T>> ): dispose 
 }
 
-// Format of a publish message payload
-interface PublishMessage extends EventualMessage {
-  channels: string | string[]
-  event: ICloudEvent
-}
-
-interface ICloudEvent<T = any> {
-  specversion: '1.0'
-  type: string // 'com.example.someevent'
-  source: string // '/mycontext'
-  id: string // uuid
-  time: string // '2018-04-05T17:31:00Z'
-  datacontenttype: 'application/json'
-  data: T
+createCloudEvent = <T = any>(
+  type: string,
+  source: string,
+  data: T,
+  subject?: string,
   meta?: ObjectLiteral
-  [key: string]: string | number | ObjectLiteral | undefined
-}
+): ICloudEvent<T> 
+
 ```
 
 #### Implementation
@@ -56,18 +54,21 @@ type SubscribeMessage struct {
 }
 
 type CloudEvent struct {
-	Id              string      `json:"id"`
-	Source          string      `json:"source"`
-	Type            string      `json:"type"`
-	Data            interface{} `json:"data"`
-	DataContentType string      `json:"datacontenttype"`
-	Time            int         `json:"time"`
-	SpecVersion     string      `json:"specversion"`
+	ID              string                 `json:"id"`
+	Source          string                 `json:"source"`
+	Type            string                 `json:"type"`
+	Subject         string                 `json:"subject"`
+	Data            map[string]interface{} `json:"data"`
+	DataContentType string                 `json:"datacontenttype"`
+	Time            string                 `json:"time"`
+	SpecVersion     string                 `json:"specversion"`
+	Meta            map[string]interface{} `json:"meta"`
 }
+
 
 
 ```
 
 
 CloudEvents.io
-https://github.com/cloudevents/spec/blob/v1.0.1/spec.md
+https://github.com/cloudevents/spec/blob/v1.0.2/spec.md
