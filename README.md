@@ -71,4 +71,4 @@ type CloudEvent struct {
 
 
 CloudEvents.io
-https://github.com/cloudevents/spec/blob/v1.0.2/spec.md
+https://github.com/cloudevents/spec/blob/v1.0.1/spec.md
