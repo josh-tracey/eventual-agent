@@ -1,6 +1,6 @@
 ### Eventual Agent
 
-Just a PubSub Websocket Server
+Golang Pubsub
 
 The eventual agent allows cluster local apps to subscribe and publish over network.
 
