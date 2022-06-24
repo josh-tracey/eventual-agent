@@ -52,6 +52,7 @@ func setupRoutes(a *Adapter) {
 	for i := 1; i <= 32; i++ {
 		go pool.Start()
 	}
+	go pool.Cleaner()
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		serveWs(pool, w, r)
 	})

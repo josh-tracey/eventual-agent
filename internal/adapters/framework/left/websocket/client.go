@@ -10,10 +10,10 @@ import (
 
 type Client struct {
 	ID     string
-	RefID  string
 	Conn   *websocket.Conn
 	Pool   *Pool
 	Send   chan interface{}
+	RefID  string
 	closed bool
 }
 
@@ -26,6 +26,10 @@ func NewClient(id string, conn *websocket.Conn, pool *Pool) *Client {
 	}
 }
 
+func (c *Client) AddRefID(refID string) {
+	c.RefID = refID
+}
+
 func (c *Client) close() {
 
 	defer func() {
@@ -36,7 +40,7 @@ func (c *Client) close() {
 
 	if !c.closed {
 		if err := c.Conn.Close(); err != nil {
-			c.Pool.Logging.Debug("websocket was already closed: %+v", err)
+			c.Pool.Logging.Trace("websocket was already closed: %+v", err)
 		}
 		close(c.Send)
 		c.closed = true
@@ -47,7 +51,7 @@ var (
 	// Time allowed to write a message to the peer.
 	WriteWait = 10 * time.Second
 	// Time allowed to read the next pong message from the peer.
-	PongWait = 60 * time.Second
+	PongWait = 30 * time.Second
 	// Send pings to peer with this period. Must be less than pongWait.
 	PingPeriod = (PongWait * 9) / 10
 	// Maximum message size allowed from peer.

@@ -1,6 +1,6 @@
 ### Eventual Agent
 
-Golang Pubsub
+Just a PubSub Websocket Server
 
 The eventual agent allows cluster local apps to subscribe and publish over network.
 
@@ -11,31 +11,33 @@ The eventual agent allows cluster local apps to subscribe and publish over netwo
 
 #### Interface
 
-Typescript SDK [reactive-node/eventual-sdk](https://gitlab.com/adriftdev1/reactive-node/-/tree/master/packages/eventual-sdk) Coming soon!
 ```ts
-
-type Observable<T> = {
-  next: (message: T) => Promise<void>
-  complete: (event: CompleteEvent) => Promise<void>
-  error: (error: Error) => void
+interface EventualMessage {
+  type: "publish" | "subscribe" | "unsubscribe"
 }
 
-createEventualClient = (
-  url: string,
-  config?: IEventualClientOptions
-):  {
-    publish: async <T>(channels: string | string[], data: ICloudEvent<T>), 
-    subscribe: <T>( channels: string | string[], obs: Observable<ICloudEvent<T>> ): dispose 
+// Payload for both subscribing and unsubscribing to/from channels
+interface SubscribeMessage extends EventualMessage {
+  channels: string | string[]
 }
 
-createCloudEvent = <T = any>(
-  type: string,
-  source: string,
-  data: T,
-  subject?: string,
+// Format of a publish message payload
+interface PublishMessage extends EventualMessage {
+  channels: string | string[]
+  event: ICloudEvent
+}
+
+interface ICloudEvent<T = any> {
+  specversion: '1.0'
+  type: string // 'com.example.someevent'
+  source: string // '/mycontext'
+  id: string // uuid
+  time: string // '2018-04-05T17:31:00Z'
+  datacontenttype: 'application/json'
+  data: T
   meta?: ObjectLiteral
-): ICloudEvent<T> 
-
+  [key: string]: string | number | ObjectLiteral | undefined
+}
 ```
 
 #### Implementation
@@ -54,17 +56,14 @@ type SubscribeMessage struct {
 }
 
 type CloudEvent struct {
-	ID              string                 `json:"id"`
-	Source          string                 `json:"source"`
-	Type            string                 `json:"type"`
-	Subject         string                 `json:"subject"`
-	Data            map[string]interface{} `json:"data"`
-	DataContentType string                 `json:"datacontenttype"`
-	Time            string                 `json:"time"`
-	SpecVersion     string                 `json:"specversion"`
-	Meta            map[string]interface{} `json:"meta"`
+	Id              string      `json:"id"`
+	Source          string      `json:"source"`
+	Type            string      `json:"type"`
+	Data            interface{} `json:"data"`
+	DataContentType string      `json:"datacontenttype"`
+	Time            int         `json:"time"`
+	SpecVersion     string      `json:"specversion"`
 }
-
 
 
 ```
