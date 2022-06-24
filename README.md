@@ -59,7 +59,13 @@ export declare const createEventualClient: (url: string, config?: IEventualClien
     subscribe: <T>(channels: string | string[], obs: Observable<ICloudEvent<T>>) => dispose;
     publish: <T_1>(channels: string | string[], data: ICloudEvent<T_1>) => Promise<void>;
 };
-export declare const createCloudEvent: <T = any>(type: string, source: string, data: T, subject?: string | undefined, meta?: ObjectLiteral<any> | undefined) => ICloudEvent<T>;
+export declare const createCloudEvent: <T = any>(
+  type: string, 
+  source: string, 
+  data: T, 
+  subject?: string | undefined, 
+  meta?: ObjectLiteral<any> | undefined
+) => ICloudEvent<T>;
 
 
 ```
