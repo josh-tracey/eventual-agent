@@ -9,7 +9,7 @@ The eventual agent allows cluster local apps to subscribe and publish over netwo
 - Provide a WebSocket server for handling Pubsub for cloudevents
 - Simple with small footprint
 
-#### Interface
+#### SDK
 
 Typescript SDK [reactive-node/eventual-sdk](https://gitlab.com/adriftdev1/reactive-node/-/tree/master/packages/eventual-sdk) Coming soon!
 ```ts
