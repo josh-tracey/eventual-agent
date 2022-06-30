@@ -22,7 +22,7 @@ type Pool struct {
 	core           *core.Adapter
 	clientsMap     map[string]*Client
 	Logging        *logging.Logger
-	cLock          sync.Mutex
+	cLock          sync.RWMutex
 }
 
 // NewPool - Creates new instance of Pool
@@ -36,6 +36,18 @@ func NewPool(c *core.Adapter) *Pool {
 		clientsMap:     make(map[string]*Client),
 		Logging:        c.GetLogger(),
 	}
+}
+
+func (p *Pool) getClient(refId string) *Client {
+	p.cLock.RLock()
+	defer p.cLock.RUnlock()
+	return p.clientsMap[refId]
+}
+
+func (p *Pool) addClient(Id string, c *Client) {
+	p.cLock.Lock()
+	p.clientsMap[Id] = c
+	p.cLock.Unlock()
 }
 
 func (p *Pool) Cleaner() {
@@ -87,7 +99,7 @@ func (p *Pool) Start() {
 				for subChan, sub := range p.core.Subs {
 					if channel == subChan || subChan == "global" {
 						for _, client := range sub.GetClients() {
-							c := p.clientsMap[client]
+							c := p.getClient(client)
 							if c != nil && !c.closed {
 								p.Logging.Trace("websocket::Pool.Start.Publish => Publishing event to client %s, subscribed to channel %s", client, subChan)
 								c.Send <- r.Event
@@ -105,7 +117,7 @@ func (p *Pool) Start() {
 			p.Logging.Trace("websocket::Pool.Start.Subscribe => Received subscribe event for channels '%s'", r.Channels)
 			id := p.core.AddClient(r.Client.ID, r.Channels)
 			r.Client.AddRefID(id)
-			p.clientsMap[id] = r.Client
+			p.addClient(id, r.Client)
 			p.Logging.Trace("websocket::Pool.Start.Subscribe => Added client %s to subscriptions", id)
 			p.Logging.Trace("Client Map: %v", p.clientsMap)
 

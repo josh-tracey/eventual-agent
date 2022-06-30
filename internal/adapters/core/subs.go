@@ -8,7 +8,7 @@ import (
 )
 
 var (
-	lock sync.Mutex
+	lock sync.RWMutex
 )
 
 type Adapter struct {
@@ -39,10 +39,10 @@ func (adapt *Adapter) GetSub(channel string) *sub {
 		if r := recover(); r != nil {
 			adapt.logger.Error("core::Adapter.GetSub => %s", r)
 		}
-		lock.Unlock()
+		lock.RUnlock()
 	}()
 
-	lock.Lock()
+	lock.RLock()
 	if _, ok := adapt.Subs[channel]; !ok {
 		adapt.Subs[channel] = newSub(channel, nil)
 	}
@@ -145,14 +145,14 @@ func (s *sub) AddClient(ID *string) string {
 
 // GetClients - Thread Safe method of getting clients from Sub
 func (s *sub) GetClients() []string {
-	lock.Lock()
+	lock.RLock()
 	var clients []string
 	for _, client := range s.clients {
 		if client != nil {
 			clients = append(clients, *client)
 		}
 	}
-	lock.Unlock()
+	lock.RUnlock()
 	return clients
 }
 
