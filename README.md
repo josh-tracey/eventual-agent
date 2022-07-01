@@ -76,6 +76,64 @@ export declare const createCloudEvent: <T = any>(
 
 ```
 
+SDK Example Usage
+
+```ts
+import { createCloudEvent, createEventualClient } from '@adriftdev/eventual-sdk'
+
+const run = async () => {
+  const URL = 'ws://localhost:8080'
+
+  const client = createEventualClient(URL)
+  const dispose = client.subscribe<{ temp: number }>('tempUpdates', {
+    next: async (event) => {
+      if (event.subject === 'CpuTemps') {
+        console.log(`Cpu Temp: ${event.data.temp}`)
+      } else {
+        console.log(`Fan Temp: ${event.data.temp}`)
+      }
+    },
+    error: async (error) => {
+      console.log(error)
+    },
+    complete: async (event) => {
+      console.log(event.code)
+    },
+  })
+  const iterations = 4
+
+  let iteration = [...Array(iterations).keys()]
+  for await (const i of iteration) {
+    await client.publish(
+      'tempUpdates', // channel / channels
+      createCloudEvent(
+        'tempUpdates', //type
+        'com.adriftdev.events', // source,
+        { temp: i + 50 }, //data
+        'CpuTemps'
+      )
+    )
+    if (i == iterations - 1) {
+      dispose()
+    }
+  }
+}
+run()
+
+
+/* 
+#####---OUTPUT---######
+
+Cpu Temp: 50
+Cpu Temp: 51
+Cpu Temp: 52
+Cpu Temp: 53
+
+#######################
+*/
+```
+
+
 #### Implementation
 Written in golang for simplicity, minimal footprint and faster processing
 
