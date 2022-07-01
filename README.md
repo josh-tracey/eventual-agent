@@ -9,6 +9,45 @@ The eventual agent allows cluster local apps to subscribe and publish over netwo
 - Provide a WebSocket server for handling Pubsub for cloudevents
 - Simple with small footprint
 
+#### Implementation
+Written in golang for simplicity, minimal footprint and faster processing
+
+```go
+type PublishEvent struct {
+	Type     string        `json:"type"`
+	Channels []interface{} `json:"channels"`
+	Event    CloudEvent `json:"event"`
+}
+
+type SubscribeMessage struct {
+	Type     string        `json:"type"`
+	Channels []interface{} `json:"channels"`
+}
+
+type CloudEvent struct {
+	ID              string                 `json:"id"`
+	Source          string                 `json:"source"`
+	Type            string                 `json:"type"`
+	Subject         string                 `json:"subject"`
+	Data            map[string]interface{} `json:"data"`
+	DataContentType string                 `json:"datacontenttype"`
+	Time            string                 `json:"time"`
+	SpecVersion     string                 `json:"specversion"`
+	Meta            map[string]interface{} `json:"meta"`
+}
+
+
+
+```
+
+
+CloudEvents.io
+https://github.com/cloudevents/spec/blob/v1.0.1/spec.md
+
+
+---
+
+
 #### SDK
 
 Typescript SDK [reactive-node/eventual-sdk](https://gitlab.com/adriftdev1/reactive-node/-/tree/master/packages/eventual-sdk) Source Coming soon!
@@ -76,37 +115,3 @@ Cpu Temp: 53
 ```
 
 
-#### Implementation
-Written in golang for simplicity, minimal footprint and faster processing
-
-```go
-type PublishEvent struct {
-	Type     string        `json:"type"`
-	Channels []interface{} `json:"channels"`
-	Event    CloudEvent `json:"event"`
-}
-
-type SubscribeMessage struct {
-	Type     string        `json:"type"`
-	Channels []interface{} `json:"channels"`
-}
-
-type CloudEvent struct {
-	ID              string                 `json:"id"`
-	Source          string                 `json:"source"`
-	Type            string                 `json:"type"`
-	Subject         string                 `json:"subject"`
-	Data            map[string]interface{} `json:"data"`
-	DataContentType string                 `json:"datacontenttype"`
-	Time            string                 `json:"time"`
-	SpecVersion     string                 `json:"specversion"`
-	Meta            map[string]interface{} `json:"meta"`
-}
-
-
-
-```
-
-
-CloudEvents.io
-https://github.com/cloudevents/spec/blob/v1.0.1/spec.md
