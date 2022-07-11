@@ -1,0 +1,94 @@
+version: 2.1
+
+# https://circleci.com/docs/reusing-config#using-the-parameters-declaration
+commands: # a reusable commands with parameters 
+  exec:
+    parameters:
+      dir:
+        default: "."
+        type: string
+      cmd:
+        type: string
+    steps:
+      - run: 
+          command: | 
+            cd <<parameters.dir>>
+            <<parameters.cmd>>
+
+  gcr-build-push:
+    parameters:
+      dir:
+        default: "."
+        type: string
+      tag:
+        default: "latest"
+        type: string
+      image:
+        type: string
+      registry:
+        type: string
+      repo:
+        type: string
+    steps:
+      - gcp-gcr/gcr-auth:
+          registry-url: <<parameters.registry>>
+      - gcp-gcr/build-image:
+          workspace-root: <<parameters.dir>>
+          path: <<parameters.dir>>
+          docker-context: <<parameters.dir>>
+          image:  <<parameters.repo>>/<<parameters.image>> 
+          tag: <<parameters.tag>>
+          no_output_timeout: 20m
+          registry-url: <<parameters.registry>>
+      - gcp-gcr/push-image:
+          image: <<parameters.repo>>/<<parameters.image>>
+          tag: <<parameters.tag>>
+          registry-url: <<parameters.registry>>
+
+orbs:
+  gcp-gcr: circleci/gcp-gcr@0.15.0
+  go: circleci/go@1.7.1
+jobs:
+  build-eventual-agent:
+    executor: 
+      name: go/default
+      tag: "1.18"
+    steps:
+      - checkout
+      - exec: 
+          dir: ./services/eventual-agent
+          cmd: | 
+            go mod tidy
+            go build -o build/ cmd/eventual-agent/eventual-agent.go
+
+  build-and-push-eventual-agent:
+    executor: gcp-gcr/default
+    steps:
+      - checkout       
+      - gcr-build-push:
+          dir: ./services/eventual-agent
+          image: eventual-agent
+          registry: ${GOOGLE_CLOUD_DOCKER_REGISTRY_URL}
+          repo: ${GOOGLE_CLOUD_DOCKER_REPO}
+
+workflows:
+  eventual-agent:
+    jobs:
+      - build-eventual-agent:
+          filters:
+            branches:
+              only: main # https://circleci.com/docs/configuration-reference#jobfilters
+      - hold:
+          type: approval
+          filters:
+            branches:
+              only: main # https://circleci.com/docs/configuration-reference#jobfilters
+          requires:
+            - build-eventual-agent
+      - build-and-push-eventual-agent:
+          context: google-cloud
+          filters:
+            branches:
+              only: main # https://circleci.com/docs/configuration-reference#jobfilters
+          requires:
+            - hold

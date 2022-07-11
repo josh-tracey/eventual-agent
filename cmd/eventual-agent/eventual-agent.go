@@ -11,9 +11,8 @@ func main() {
 
 	var subs ports.SubjectPort
 	var ws ports.WebSocketPort
-	var logger *logging.Logger
+	var logger *logging.Logger = logging.NewLogger()
 
-	logger = logging.NewLogger()
 	subs = core.NewAdapter(logger)
 	ws = websocket.NewAdapter(subs)
 
