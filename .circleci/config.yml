@@ -2,18 +2,6 @@ version: 2.1
 
 # https://circleci.com/docs/reusing-config#using-the-parameters-declaration
 commands: # a reusable commands with parameters 
-  exec:
-    parameters:
-      dir:
-        default: "."
-        type: string
-      cmd:
-        type: string
-    steps:
-      - run: 
-          command: | 
-            cd <<parameters.dir>>
-            <<parameters.cmd>>
 
   gcr-build-push:
     parameters:
@@ -55,9 +43,8 @@ jobs:
       tag: "1.18"
     steps:
       - checkout
-      - exec: 
-          dir: ./services/eventual-agent
-          cmd: | 
+      - run: 
+          command: | 
             go mod tidy
             go build -o build/ cmd/eventual-agent/eventual-agent.go
 
@@ -66,7 +53,6 @@ jobs:
     steps:
       - checkout       
       - gcr-build-push:
-          dir: ./services/eventual-agent
           image: eventual-agent
           registry: ${GOOGLE_CLOUD_DOCKER_REGISTRY_URL}
           repo: ${GOOGLE_CLOUD_DOCKER_REPO}
