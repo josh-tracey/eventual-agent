@@ -77,18 +77,18 @@ workflows:
       - build-eventual-agent:
           filters:
             branches:
-              only: main # https://circleci.com/docs/configuration-reference#jobfilters
+              only: master # https://circleci.com/docs/configuration-reference#jobfilters
       - hold:
           type: approval
           filters:
             branches:
-              only: main # https://circleci.com/docs/configuration-reference#jobfilters
+              only: master # https://circleci.com/docs/configuration-reference#jobfilters
           requires:
             - build-eventual-agent
       - build-and-push-eventual-agent:
           context: google-cloud
           filters:
             branches:
-              only: main # https://circleci.com/docs/configuration-reference#jobfilters
+              only: master # https://circleci.com/docs/configuration-reference#jobfilters
           requires:
             - hold
