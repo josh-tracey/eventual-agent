@@ -9,67 +9,6 @@ The eventual agent allows cluster local apps to subscribe and publish over netwo
 - Provide a WebSocket server for handling Pubsub for cloudevents
 - Simple with small footprint
 
-#### SDK
-
-Typescript SDK [reactive-node/eventual-sdk](https://gitlab.com/adriftdev1/reactive-node/-/tree/master/packages/eventual-sdk) Coming soon!
-```ts
-export declare type dispose = () => void;
-export declare type ObjectLiteral<T = any> = {
-    [key: string]: T;
-};
-/**
- * @param specversion '1.0.2'
- * @param type 'com.example.some-event'
- * @param source '/mycontext'
- * @param subject
- * @param id uuid
- * @param time
- * @param datacontenttype 'application/json'
- * @param data ObjectLiteral
- */
-export declare type ICloudEvent<T = any> = {
-    specversion: '1.0.2';
-    type: string;
-    source?: string;
-    subject?: string;
-    id: string;
-    time: string;
-    datacontenttype: 'application/json';
-    data: T;
-    meta?: ObjectLiteral;
-};
-declare type CompleteEvent = {
-    reason?: string;
-    code?: number;
-    wasClean?: boolean;
-    target?: WebSocket;
-};
-export declare type Observable<T> = {
-    next: (message: T) => Promise<void>;
-    complete: (event: CompleteEvent) => Promise<void>;
-    error: (error: Error) => void;
-};
-export declare type IEventualClientOptions = {
-    waitForOpenConnection?: {
-        maxNumberOfAttempts?: number;
-        attemptInterval?: number;
-    };
-};
-export declare const createEventualClient: (url: string, config?: IEventualClientOptions | undefined) => {
-    subscribe: <T>(channels: string | string[], obs: Observable<ICloudEvent<T>>) => dispose;
-    publish: <T_1>(channels: string | string[], data: ICloudEvent<T_1>) => Promise<void>;
-};
-export declare const createCloudEvent: <T = any>(
-  type: string, 
-  source: string, 
-  data: T, 
-  subject?: string | undefined, 
-  meta?: ObjectLiteral<any> | undefined
-) => ICloudEvent<T>;
-
-
-```
-
 #### Implementation
 Written in golang for simplicity, minimal footprint and faster processing
 
@@ -104,3 +43,75 @@ type CloudEvent struct {
 
 CloudEvents.io
 https://github.com/cloudevents/spec/blob/v1.0.1/spec.md
+
+
+---
+
+
+#### SDK
+
+Typescript SDK [reactive-node/eventual-sdk](https://gitlab.com/adriftdev1/reactive-node/-/tree/master/packages/eventual-sdk) Source Coming soon!
+
+Install with
+```sh
+yarn add @adriftdev/eventual-sdk
+```
+
+SDK Example Usage
+
+```ts
+import { createCloudEvent, createEventualClient } from '@adriftdev/eventual-sdk'
+
+const run = async () => {
+  const URL = 'ws://localhost:8080'
+
+  const client = createEventualClient(URL)
+  const dispose = client.subscribe<{ temp: number }>('tempUpdates', {
+    next: async (event) => {
+      if (event.subject === 'CpuTemps') {
+        console.log(`Cpu Temp: ${event.data.temp}`)
+      } else {
+        console.log(`Fan Temp: ${event.data.temp}`)
+      }
+    },
+    error: async (error) => {
+      console.log(error)
+    },
+    complete: async (event) => {
+      console.log(event.code)
+    },
+  })
+  const iterations = 4
+
+  let iteration = [...Array(iterations).keys()]
+  for await (const i of iteration) {
+    await client.publish(
+      'tempUpdates', // channel / channels
+      createCloudEvent(
+        'tempUpdates', //type
+        'com.adriftdev.events', // source,
+        { temp: i + 50 }, //data
+        'CpuTemps'
+      )
+    )
+    if (i == iterations - 1) {
+      dispose()
+    }
+  }
+}
+run()
+
+
+/* 
+#####---OUTPUT---######
+
+Cpu Temp: 50
+Cpu Temp: 51
+Cpu Temp: 52
+Cpu Temp: 53
+
+#######################
+*/
+```
+
+
