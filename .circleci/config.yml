@@ -17,21 +17,22 @@ commands: # a reusable commands with parameters
         type: string
       repo:
         type: string
+      api-key:
+        type: string
+      username:
+        type: string
     steps:
-      - gcp-gcr/gcr-auth:
-          registry-url: <<parameters.registry>>
-      - gcp-gcr/build-image:
+      - docker/build:
           workspace-root: <<parameters.dir>>
           path: <<parameters.dir>>
           docker-context: <<parameters.dir>>
           image:  <<parameters.repo>>/<<parameters.image>> 
           tag: <<parameters.tag>>
-          no_output_timeout: 20m
-          registry-url: <<parameters.registry>>
-      - gcp-gcr/push-image:
+      - docker/push:
           image: <<parameters.repo>>/<<parameters.image>>
           tag: <<parameters.tag>>
-          registry-url: <<parameters.registry>>
+          username: <<parameters.username>>
+          password: <<parameters.api-key>>
 
 orbs:
   gcp-gcr: circleci/gcp-gcr@0.15.0
@@ -65,8 +66,10 @@ jobs:
       - checkout       
       - gcr-build-push:
           image: eventual-agent
-          registry: ${GOOGLE_CLOUD_DOCKER_REGISTRY_URL}
-          repo: ${GOOGLE_CLOUD_DOCKER_REPO}
+          repo: ${DOCKER_REPO}
+          username: ${DOCKER_USERNAME}
+          registry: ${DOCKER_REGISTRY}
+          api-key: ${DOCKER_API_KEY}
 
 workflows:
   eventual-agent:
@@ -97,7 +100,7 @@ workflows:
             - test-eventual-agent
 
       - build-and-push-eventual-agent:
-          context: google-cloud
+          context: docker-hub
           filters:
             branches:
               only: release/* 
