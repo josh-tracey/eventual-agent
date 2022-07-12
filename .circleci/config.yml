@@ -3,7 +3,7 @@ version: 2.1
 # https://circleci.com/docs/reusing-config#using-the-parameters-declaration
 commands: # a reusable commands with parameters 
 
-  gcr-build-push:
+  docker-build-push:
     parameters:
       dir:
         default: "."
@@ -35,7 +35,7 @@ commands: # a reusable commands with parameters
           password: <<parameters.api-key>>
 
 orbs:
-  gcp-gcr: circleci/gcp-gcr@0.15.0
+  docker: circleci/docker@2.1.2
   go: circleci/go@1.7.1
 jobs:
   build-eventual-agent:
@@ -61,10 +61,10 @@ jobs:
             go test -v ./...
 
   build-and-push-eventual-agent:
-    executor: gcp-gcr/default
+    executor: docker/default
     steps:
       - checkout       
-      - gcr-build-push:
+      - docker-build-push:
           image: eventual-agent
           repo: ${DOCKER_REPO}
           username: ${DOCKER_USERNAME}
