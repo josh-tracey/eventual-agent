@@ -48,6 +48,17 @@ jobs:
             go mod tidy
             go build -o build/ cmd/eventual-agent/eventual-agent.go
 
+  test-eventual-agent:
+    executor: 
+      name: go/default
+      tag: "1.18"
+    steps:
+      - checkout
+      - run: 
+          command: | 
+            go mod tidy
+            go test -v ./...
+
   build-and-push-eventual-agent:
     executor: gcp-gcr/default
     steps:
@@ -60,21 +71,35 @@ jobs:
 workflows:
   eventual-agent:
     jobs:
+
+      - test-eventual-agent:
+          filters:
+            branches:
+              only: 
+                - master
+                - release/* 
+
       - build-eventual-agent:
           filters:
             branches:
-              only: master # https://circleci.com/docs/configuration-reference#jobfilters
+              only: 
+                - master
+                - release/*
+          requires:
+            - test-eventual-agent
+
       - hold:
           type: approval
           filters:
             branches:
-              only: master # https://circleci.com/docs/configuration-reference#jobfilters
+              only: release/*
           requires:
-            - build-eventual-agent
+            - test-eventual-agent
+
       - build-and-push-eventual-agent:
           context: google-cloud
           filters:
             branches:
-              only: master # https://circleci.com/docs/configuration-reference#jobfilters
+              only: release/* 
           requires:
             - hold

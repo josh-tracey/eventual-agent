@@ -49,16 +49,19 @@ type PublishRequest struct {
 	Client *Client
 }
 
-func convertToStringSlice(input []interface{}) []string {
+func convertToStringSlice(input []string) []string {
 	s := make([]string, len(input))
 	for i, v := range input {
-		s[i] = fmt.Sprint(v)
+		s[i] = fmt.Sprintf("%s", v)
 	}
 	return s
 }
 
 func NewPublishEvent(m map[string]interface{}) *PublishEvent {
-	channels, _ := m["channels"].([]interface{})
+	channels, ok := m["channels"].([]string)
+	if !ok {
+		panic("channels is not a string slice")
+	}
 	return &PublishEvent{
 		Channels: convertToStringSlice(channels),
 		Event:    m["event"].(CloudEvent),
@@ -66,7 +69,10 @@ func NewPublishEvent(m map[string]interface{}) *PublishEvent {
 }
 
 func NewSubscribeMessage(m map[string]interface{}) *SubscribeMessage {
-	channels, _ := m["channels"].([]interface{})
+	channels, ok := m["channels"].([]string)
+	if !ok {
+		panic("channels is not a string slice")
+	}
 	return &SubscribeMessage{
 		Channels: convertToStringSlice(channels),
 	}
@@ -92,7 +98,11 @@ func (c *Client) NewPublishRequest(m map[string]interface{}) *PublishRequest {
 			meta[k] = v
 		}
 	}
-	channels, _ := m["channels"].([]interface{})
+	channels, ok := m["channels"].([]string)
+
+	if !ok {
+		panic("channels is not a string slice")
+	}
 
 	subject, ok := event["subject"].(string)
 
@@ -128,7 +138,10 @@ func (c *Client) NewSubscribeRequest(m map[string]interface{}) *SubscribeRequest
 	}()
 
 	c.Pool.Logging.Trace("NewSubscribeRequest: %+v", m)
-	channels, _ := m["channels"].([]interface{})
+	channels, ok := m["channels"].([]string)
+	if !ok {
+		panic("channels is not a string slice")
+	}
 	return &SubscribeRequest{
 		SubscribeMessage: SubscribeMessage{
 			Type:     m["type"].(string),
