@@ -89,6 +89,8 @@ workflows:
             branches:
               only: 
                 - /release\/.*/ 
+            tags: 
+              only: /.*/
 
   eventual-agent:
     jobs:
