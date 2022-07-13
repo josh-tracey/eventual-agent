@@ -23,8 +23,7 @@ commands: # a reusable commands with parameters
         type: string
     steps:
       - run:
-          - command: | 
-              docker login -u $username -p $api-key
+          - command: docker login -u $username -p $api-key
       - docker/build:
           path: <<parameters.dir>>
           docker-context: <<parameters.dir>>
