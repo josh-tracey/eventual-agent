@@ -31,6 +31,14 @@ commands: # a reusable commands with parameters
       - docker/push:
           image: <<parameters.repo>>/<<parameters.image>>
           tag: <<parameters.tag>>
+      - docker/build:
+          path: <<parameters.dir>>
+          docker-context: <<parameters.dir>>
+          image:  <<parameters.repo>>/<<parameters.image>> 
+          tag: latest
+      - docker/push:
+          image: <<parameters.repo>>/<<parameters.image>>
+          tag: latest
 
 orbs:
   docker: circleci/docker@2.1.2
@@ -65,11 +73,25 @@ jobs:
       - docker-build-push:
           image: eventual-agent
           repo: ${DOCKER_REPO}
+          tag: <<pipeline.git.tag>>
           username: ${DOCKER_USERNAME}
           registry: ${DOCKER_REGISTRY}
           api-key: ${DOCKER_API_KEY}
 
 workflows:
+  docker-eventual-agent:
+    when:
+      << pipeline.git.tag >>
+    jobs: 
+      - build-and-push-eventual-agent:
+          context: docker-hub
+          filters:
+            branches:
+              only: 
+                - /release\/.*/ 
+          requires:
+            - test-eventual-agent
+
   eventual-agent:
     jobs:
 
@@ -88,23 +110,3 @@ workflows:
                 - /release\/.*/
           requires:
             - test-eventual-agent
-
-      - hold:
-          type: approval
-          filters:
-            branches:
-              only: 
-                - /release\/.*/
-
-          requires:
-            - test-eventual-agent
-
-      - build-and-push-eventual-agent:
-          context: docker-hub
-          filters:
-            branches:
-              only: 
-                - /release\/.*/
- 
-          requires:
-            - hold
