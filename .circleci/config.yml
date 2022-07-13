@@ -22,9 +22,7 @@ commands: # a reusable commands with parameters
       username:
         type: string
     steps:
-      - run:
-        - command: | 
-            docker login -u <<parameters.username>> -p <<parameters.api-key>>
+      - run: docker login -u <<parameters.username>> -p <<parameters.api-key>>
       - docker/build:
           path: <<parameters.dir>>
           docker-context: <<parameters.dir>>
@@ -61,7 +59,7 @@ jobs:
             go test -v ./...
 
   build-and-push-eventual-agent:
-    executor: docker/default
+    executor: docker/docker
     steps:
       - checkout       
       - docker-build-push:
