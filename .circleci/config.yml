@@ -78,14 +78,14 @@ workflows:
             branches:
               only: 
                 - master
-                - release/* 
+                - /release\/.*/ 
 
       - build-eventual-agent:
           filters:
             branches:
               only: 
                 - master
-                - release/*
+                - /release\/.*/
           requires:
             - test-eventual-agent
 
@@ -93,7 +93,9 @@ workflows:
           type: approval
           filters:
             branches:
-              only: release/*
+              only: 
+                - /release\/.*/
+
           requires:
             - test-eventual-agent
 
@@ -101,6 +103,8 @@ workflows:
           context: docker-hub
           filters:
             branches:
-              only: release/* 
+              only: 
+                - /release\/.*/
+ 
           requires:
             - hold
