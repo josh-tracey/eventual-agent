@@ -8,7 +8,7 @@ import (
 
 func TestNewPublishEvent(t *testing.T) {
 	inputEvent := map[string]interface{}{
-		"channels": []string{"TestChannel"},
+		"channels": []interface{}{"TestChannel"},
 		"event": CloudEvent{
 			Type:            "TempUpdate",
 			Source:          "com.adriftdev.server001",
