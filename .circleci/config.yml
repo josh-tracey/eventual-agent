@@ -26,17 +26,13 @@ commands: # a reusable commands with parameters
           docker-context: <<parameters.dir>>
           image:  <<parameters.repo>>/<<parameters.image>> 
           tag: <<parameters.tag>>
-      - docker/push:
-          image: <<parameters.repo>>/<<parameters.image>>
-          tag: <<parameters.tag>>
+      - run: "docker push <<parameters.repo>>/<<parameters.image>>:<<parameters.tag>>"
       - docker/build:
           path: <<parameters.dir>>
           docker-context: <<parameters.dir>>
           image:  <<parameters.repo>>/<<parameters.image>> 
           tag: latest
-      - docker/push:
-          image: <<parameters.repo>>/<<parameters.image>>
-          tag: latest
+      - run: "docker push <<parameters.repo>>/<<parameters.image>>:latest"
 
 orbs:
   docker: circleci/docker@2.1.2
