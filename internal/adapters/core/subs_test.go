@@ -27,7 +27,7 @@ func TestSubStruct(t *testing.T) {
 	id1 := Sub.AddClient(&client1)
 	id2 := Sub.AddClient(&client2)
 
-	require.Equal(t, []string{id1, id2}, Sub.GetClients())
+	require.ElementsMatch(t, []string{id1, id2}, Sub.GetClients())
 
 	Sub.RemoveClientId(id1)
 
