@@ -65,7 +65,7 @@ jobs:
             go test -v ./...
 
   build-and-push-eventual-agent:
-    executor: docker/docker
+    executor: docker/machine
     steps:
       - checkout       
       - docker-build-push:
