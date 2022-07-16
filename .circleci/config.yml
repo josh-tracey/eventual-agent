@@ -13,8 +13,6 @@ commands: # a reusable commands with parameters
         type: string
       image:
         type: string
-      registry:
-        type: string
       repo:
         type: string
       api-key:
@@ -22,7 +20,7 @@ commands: # a reusable commands with parameters
       username:
         type: string
     steps:
-      - run: docker login -u <<parameters.username>> -p <<parameters.api-key>>
+      - run: "echo <<parameters.api-key>> | docker login -u <<parameters.username>> --password-stdin"
       - docker/build:
           path: <<parameters.dir>>
           docker-context: <<parameters.dir>>
@@ -72,11 +70,10 @@ jobs:
       - checkout       
       - docker-build-push:
           image: eventual-agent
-          repo: ${DOCKER_REPO}
+          repo: $DOCKER_REPO
           tag: <<pipeline.git.tag>>
-          username: ${DOCKER_USERNAME}
-          registry: ${DOCKER_REGISTRY}
-          api-key: ${DOCKER_API_KEY}
+          username: $DOCKER_USERNAME
+          api-key: $DOCKER_API_TOKEN
 
 workflows:
   docker-eventual-agent:
@@ -84,7 +81,6 @@ workflows:
       << pipeline.git.tag >>
     jobs: 
       - build-and-push-eventual-agent:
-          context: docker-hub
           filters:
             branches:
               only: 
@@ -94,7 +90,6 @@ workflows:
 
   eventual-agent:
     jobs:
-
       - test-eventual-agent:
           filters:
             branches:
