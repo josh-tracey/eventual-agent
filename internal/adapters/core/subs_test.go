@@ -49,7 +49,8 @@ func TestAdapter(t *testing.T) {
 	clientId1 := adapt.AddClient("10.0.0.5:8000", []string{"tempUpdates"})
 	clientId2 := adapt.AddClient("10.0.0.10:8000", []string{"serverUpdates"})
 
-	require.Equal(t, []string{clientId1, clientId2}, adapt.GetClients())
+	require.Contains(t, adapt.GetClients(), clientId1)
+	require.Contains(t, adapt.GetClients(), clientId2)
 
 	adapt.RemoveClientId(clientId1)
 
