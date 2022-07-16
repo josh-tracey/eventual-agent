@@ -49,7 +49,7 @@ type PublishRequest struct {
 	Client *Client
 }
 
-func convertToStringSlice(input []string) []string {
+func convertToStringSlice(input []interface{}) []string {
 	s := make([]string, len(input))
 	for i, v := range input {
 		s[i] = fmt.Sprintf("%s", v)
@@ -58,7 +58,7 @@ func convertToStringSlice(input []string) []string {
 }
 
 func NewPublishEvent(m map[string]interface{}) *PublishEvent {
-	channels, ok := m["channels"].([]string)
+	channels, ok := m["channels"].([]interface{})
 	if !ok {
 		panic("channels is not a string slice")
 	}
@@ -69,7 +69,7 @@ func NewPublishEvent(m map[string]interface{}) *PublishEvent {
 }
 
 func NewSubscribeMessage(m map[string]interface{}) *SubscribeMessage {
-	channels, ok := m["channels"].([]string)
+	channels, ok := m["channels"].([]interface{})
 	if !ok {
 		panic("channels is not a string slice")
 	}
@@ -98,7 +98,7 @@ func (c *Client) NewPublishRequest(m map[string]interface{}) *PublishRequest {
 			meta[k] = v
 		}
 	}
-	channels, ok := m["channels"].([]string)
+	channels, ok := m["channels"].([]interface{})
 
 	if !ok {
 		panic("channels is not a string slice")
@@ -138,8 +138,9 @@ func (c *Client) NewSubscribeRequest(m map[string]interface{}) *SubscribeRequest
 	}()
 
 	c.Pool.Logging.Trace("NewSubscribeRequest: %+v", m)
-	channels, ok := m["channels"].([]string)
+	channels, ok := m["channels"].([]interface{})
 	if !ok {
+		c.Pool.Logging.Debug("channels is not a string slice: %+v", m["channels"])
 		panic("channels is not a string slice")
 	}
 	return &SubscribeRequest{

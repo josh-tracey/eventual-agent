@@ -13,8 +13,6 @@ commands: # a reusable commands with parameters
         type: string
       image:
         type: string
-      registry:
-        type: string
       repo:
         type: string
       api-key:
@@ -22,15 +20,19 @@ commands: # a reusable commands with parameters
       username:
         type: string
     steps:
-      - run: docker login -u <<parameters.username>> -p <<parameters.api-key>>
+      - run: "echo <<parameters.api-key>> | docker login -u <<parameters.username>> --password-stdin"
       - docker/build:
           path: <<parameters.dir>>
           docker-context: <<parameters.dir>>
           image:  <<parameters.repo>>/<<parameters.image>> 
           tag: <<parameters.tag>>
-      - docker/push:
-          image: <<parameters.repo>>/<<parameters.image>>
-          tag: <<parameters.tag>>
+      - run: "docker push <<parameters.repo>>/<<parameters.image>>:<<parameters.tag>>"
+      - docker/build:
+          path: <<parameters.dir>>
+          docker-context: <<parameters.dir>>
+          image:  <<parameters.repo>>/<<parameters.image>> 
+          tag: latest
+      - run: "docker push <<parameters.repo>>/<<parameters.image>>:latest"
 
 orbs:
   docker: circleci/docker@2.1.2
@@ -59,48 +61,43 @@ jobs:
             go test -v ./...
 
   build-and-push-eventual-agent:
-    executor: docker/docker
+    executor: docker/machine
     steps:
       - checkout       
       - docker-build-push:
           image: eventual-agent
-          repo: ${DOCKER_REPO}
-          username: ${DOCKER_USERNAME}
-          registry: ${DOCKER_REGISTRY}
-          api-key: ${DOCKER_API_KEY}
+          repo: $DOCKER_REPO
+          tag: <<pipeline.git.tag>>
+          username: $DOCKER_USERNAME
+          api-key: $DOCKER_API_TOKEN
 
 workflows:
+  docker-eventual-agent:
+    when:
+      << pipeline.git.tag >>
+    jobs: 
+      - build-and-push-eventual-agent:
+          filters:
+            branches:
+              only: 
+                - /release\/.*/ 
+            tags: 
+              only: /.*/
+
   eventual-agent:
     jobs:
-
       - test-eventual-agent:
           filters:
             branches:
               only: 
                 - master
-                - release/* 
+                - /release\/.*/ 
 
       - build-eventual-agent:
           filters:
             branches:
               only: 
                 - master
-                - release/*
+                - /release\/.*/
           requires:
             - test-eventual-agent
-
-      - hold:
-          type: approval
-          filters:
-            branches:
-              only: release/*
-          requires:
-            - test-eventual-agent
-
-      - build-and-push-eventual-agent:
-          context: docker-hub
-          filters:
-            branches:
-              only: release/* 
-          requires:
-            - hold

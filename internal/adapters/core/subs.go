@@ -44,7 +44,7 @@ func (adapt *Adapter) GetSub(channel string) *sub {
 
 	lock.RLock()
 	if _, ok := adapt.Subs[channel]; !ok {
-		adapt.Subs[channel] = newSub(channel, nil)
+		adapt.Subs[channel] = newSub(channel)
 	}
 
 	return adapt.Subs[channel]
@@ -72,15 +72,17 @@ func (adapt *Adapter) RemoveClientId(client string) {
 
 	var done chan bool = make(chan bool)
 	go func() {
+		lock.Lock()
 		for _, v := range adapt.Subs {
-			for _, clientId := range v.clients {
-				if clientId != nil {
-					v.RemoveClientId(*clientId)
+			for i, clientId := range v.clients {
+				if *clientId == client {
+					v.clients = remove(v.clients, i)
 				}
 			}
 		}
 		done <- true
 		close(done)
+		lock.Unlock()
 	}()
 	<-done
 }
@@ -127,10 +129,10 @@ func (adapt *Adapter) RemoveClient(ID string, channels []string) {
 }
 
 // NewSub - Creates an instance of Sub
-func newSub(id string, client *string) *sub {
+func newSub(id string) *sub {
 	return &sub{
 		ID:      id,
-		clients: []*string{client},
+		clients: []*string{},
 	}
 }
 
@@ -160,8 +162,8 @@ func (s *sub) GetClients() []string {
 func (s *sub) RemoveClientId(client string) {
 	lock.Lock()
 	for i, clientId := range s.clients {
-		if clientId != nil && *clientId == client {
-			remove(s.clients, i)
+		if *clientId == client {
+			s.clients = remove(s.clients, i)
 		}
 	}
 	lock.Unlock()
