@@ -7,7 +7,6 @@ import (
 	"errors"
 	"fmt"
 	"log"
-	"time"
 
 	"github.com/josh-tracey/eventual-agent/internal/adapters/core"
 	"github.com/patrickmn/go-cache"
@@ -19,14 +18,14 @@ type Adapter struct {
 	cache *cache.Cache
 }
 
-func NewAdapter() *Adapter {
+func NewAdapter(c *cache.Cache) *Adapter {
 	adapter := &Adapter{}
-	adapter.init()
+	adapter.init(c)
 	return adapter
 }
 
-func (adapter *Adapter) init() {
-	adapter.cache = cache.New(5*time.Minute, 10*time.Minute)
+func (adapter *Adapter) init(c *cache.Cache) {
+	adapter.cache = c
 }
 
 func (adapter *Adapter) Enqueue(channel string, message core.CloudEvent) {

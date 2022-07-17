@@ -6,21 +6,30 @@ import (
 	"net/http"
 
 	"github.com/josh-tracey/eventual-agent/internal/adapters/core"
+	"github.com/josh-tracey/eventual-agent/internal/adapters/framework/right/message_queue"
 	"github.com/josh-tracey/eventual-agent/internal/logging"
 	"github.com/josh-tracey/eventual-agent/internal/ports"
 )
 
 type Adapter struct {
-	core *core.Adapter
+	core  *core.Adapter
+	queue *message_queue.Adapter
 }
 
-func NewAdapter(c ports.SubjectPort) *Adapter {
+func NewAdapter(c ports.SubjectPort, q ports.MessageQueuePort) *Adapter {
 	value, ok := c.(*core.Adapter)
 	if !ok {
 		c.GetLogger().Error("websocket::Adapter.NewAdapter => Failed to cast c to *core.Adapter")
 	}
+
+	qValue, ok := q.(*message_queue.Adapter)
+	if !ok {
+		c.GetLogger().Error("websocket::Adapter.NewAdapter => Failed to cast q to *message_queue.Adapter")
+	}
+
 	return &Adapter{
-		core: value,
+		core:  value,
+		queue: qValue,
 	}
 }
 
@@ -53,7 +62,7 @@ func serveWs(pool *Pool, w http.ResponseWriter, r *http.Request) {
 }
 
 func setupRoutes(a *Adapter) {
-	pool := NewPool(a.core)
+	pool := NewPool(a.core, a.queue)
 	for i := 1; i <= 32; i++ {
 		go pool.Start()
 	}

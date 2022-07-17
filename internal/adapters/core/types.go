@@ -33,9 +33,16 @@ type SubscribeMessage struct {
 	Channels []string `json:"channels"`
 }
 
+type HistoryMessage struct {
+	Type    string `json:"type"`
+	Channel string `json:"channel"`
+}
+
 func (p PublishEvent) isMessage() {}
 
 func (p SubscribeMessage) isMessage() {}
+
+func (h HistoryMessage) isMessage() {}
 
 // CloudEvent - https://github.com/cloudevents/spec/blob/v1.0.1/spec.md
 type CloudEvent struct {
@@ -57,6 +64,11 @@ type SubscribeRequest[T any] struct {
 
 type PublishRequest[T any] struct {
 	PublishEvent
+	Client T
+}
+
+type HistoryRequest[T any] struct {
+	HistoryMessage
 	Client T
 }
 
