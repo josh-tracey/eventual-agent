@@ -28,3 +28,13 @@ func TestNewPublishEvent(t *testing.T) {
 	require.Equal(t, "com.adriftdev.server001", event.Event.Source)
 	require.Equal(t, 56.0, event.Event.Data["cpu01"])
 }
+
+func TestNewSubscribeMessage(t *testing.T) {
+	inputMessage := map[string]interface{}{
+		"channels": []interface{}{"TestChannel", "TestChannel2"},
+	}
+
+	message := NewSubscribeMessage(inputMessage)
+
+	require.Equal(t, []string{"TestChannel", "TestChannel2"}, message.Channels)
+}
