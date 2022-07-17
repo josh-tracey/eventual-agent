@@ -2,10 +2,12 @@ package logging
 
 import (
 	"fmt"
+	"log"
 	"os"
 )
 
 var logLevel = os.Getenv("LOG_LEVEL")
+var disableTimestamp = os.Getenv("DISABLE_LOG_TIMESTAMPS")
 
 type Logger struct {
 	LogLevel int8
@@ -69,27 +71,47 @@ func (l *Logger) Start() {
 		select {
 		case msg := <-l.trace:
 			if l.LogLevel >= 50 {
-				fmt.Printf("%strace: %s%s\n", FgGrey, Reset, msg)
+				if disableTimestamp == "true" {
+					fmt.Printf("%strace: %s%s\n", FgGrey, Reset, msg)
+				} else {
+					log.Printf("%strace: %s%s\n", FgGrey, Reset, msg)
+				}
 			}
 
 		case msg := <-l.debug:
 			if l.LogLevel >= 40 {
-				fmt.Printf("%sdebug: %s%s\n", FgBlue, Reset, msg)
+				if disableTimestamp == "true" {
+					fmt.Printf("%sdebug: %s%s\n", FgBlue, Reset, msg)
+				} else {
+					log.Printf("%sdebug: %s%s\n", FgGreen, Reset, msg)
+				}
 			}
 
 		case msg := <-l.info:
 			if l.LogLevel >= 30 {
-				fmt.Printf("%sinfo: %s%s\n", FgGreen, Reset, msg)
+				if disableTimestamp == "true" {
+					fmt.Printf("%sinfo: %s%s\n", FgGreen, Reset, msg)
+				} else {
+					log.Printf("%sinfo: %s%s\n", FgGreen, Reset, msg)
+				}
 			}
 
 		case msg := <-l.warn:
 			if l.LogLevel >= 20 {
-				fmt.Printf("%swarn: %s%s\n", FgYellow, Reset, msg)
+				if disableTimestamp == "true" {
+					fmt.Printf("%swarn: %s%s\n", FgYellow, Reset, msg)
+				} else {
+					log.Printf("%swarn: %s%s\n", FgYellow, Reset, msg)
+				}
 			}
 
 		case msg := <-l.error:
 			if l.LogLevel >= 10 {
-				fmt.Printf("%serror: %s%s\n", FgRed, Reset, msg)
+				if disableTimestamp == "true" {
+					fmt.Printf("%serror: %s%s\n", FgRed, Reset, msg)
+				} else {
+					log.Printf("%serror: %s%s\n", FgRed, Reset, msg)
+				}
 			}
 		}
 	}

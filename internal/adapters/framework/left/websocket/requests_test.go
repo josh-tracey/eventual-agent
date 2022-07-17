@@ -3,13 +3,14 @@ package websocket
 import (
 	"testing"
 
+	"github.com/josh-tracey/eventual-agent/internal/adapters/core"
 	"github.com/stretchr/testify/require"
 )
 
 func TestNewPublishEvent(t *testing.T) {
 	inputEvent := map[string]interface{}{
 		"channels": []interface{}{"TestChannel"},
-		"event": CloudEvent{
+		"event": core.CloudEvent{
 			Type:            "TempUpdate",
 			Source:          "com.adriftdev.server001",
 			Data:            map[string]interface{}{"cpu01": 56.0, "cpu02": 78.0},
