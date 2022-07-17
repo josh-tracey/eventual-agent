@@ -256,10 +256,17 @@ func (c *Client) NewHistoryRequest(m map[string]interface{}) *core.HistoryReques
 		c.Pool.Logging.Debug("channel is not a string: %+v", m["channel"])
 		panic("channel is not a string")
 	}
+
+	consume, ok := m["consume"].(bool)
+	if !ok {
+		consume = false
+	}
+
 	return &core.HistoryRequest[*Client]{
 		HistoryMessage: core.HistoryMessage{
 			Type:    m["type"].(string),
 			Channel: channel,
+			Consume: consume,
 		},
 		Client: c,
 	}

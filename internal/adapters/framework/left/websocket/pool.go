@@ -139,7 +139,7 @@ func (p *Pool) Start() {
 
 		case r := <-p.History:
 			p.Logging.Trace("websocket::Pool.Start.History => Received history event for channel '%s'", r.Channel)
-			iter, err := p.queue.Iter(r.Channel, false)
+			iter, err := p.queue.Iter(r.Channel, r.Consume)
 			if err != nil {
 				p.Logging.Error("websocket::Pool.Start.History => Error getting iterator for channel '%s': %s", r.Channel, err.Error())
 				continue

@@ -28,5 +28,6 @@ func NewSubscribeMessage(m map[string]interface{}) *core.SubscribeMessage {
 func NewHistoryMessage(m map[string]interface{}) *core.HistoryMessage {
 	return &core.HistoryMessage{
 		Channel: m["channel"].(string),
+		Consume: m["consume"].(bool),
 	}
 }

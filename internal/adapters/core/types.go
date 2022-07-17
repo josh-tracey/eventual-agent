@@ -36,6 +36,7 @@ type SubscribeMessage struct {
 type HistoryMessage struct {
 	Type    string `json:"type"`
 	Channel string `json:"channel"`
+	Consume bool   `json:"consume"`
 }
 
 func (p PublishEvent) isMessage() {}
