@@ -2,9 +2,11 @@ package websocket
 
 import (
 	"fmt"
+	"log"
 	"net/http"
 
 	"github.com/josh-tracey/eventual-agent/internal/adapters/core"
+	"github.com/josh-tracey/eventual-agent/internal/logging"
 	"github.com/josh-tracey/eventual-agent/internal/ports"
 )
 
@@ -25,7 +27,10 @@ func NewAdapter(c ports.SubjectPort) *Adapter {
 func (a *Adapter) ListenAndServe() {
 	setupRoutes(a)
 	a.core.GetLogger().Info("Listening on 0.0.0.0:8080")
-	http.ListenAndServe(":8080", nil)
+	err := http.ListenAndServe(":8080", nil)
+	if err != nil {
+		log.Fatal(logging.FgRed, "Fatal: ", logging.Reset, err)
+	}
 }
 
 func serveWs(pool *Pool, w http.ResponseWriter, r *http.Request) {

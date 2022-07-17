@@ -15,10 +15,10 @@ var (
 
 // Pool - Shared worker pool resources
 type Pool struct {
-	Subscribe      chan SubscribeRequest
-	Unsubscribe    chan SubscribeRequest
-	UnsubscribeAll chan SubscribeRequest
-	Publish        chan PublishRequest
+	Subscribe      chan core.SubscribeRequest[*Client]
+	Unsubscribe    chan core.SubscribeRequest[*Client]
+	UnsubscribeAll chan core.SubscribeRequest[*Client]
+	Publish        chan core.PublishRequest[*Client]
 	core           *core.Adapter
 	clientsMap     map[string]*Client
 	Logging        *logging.Logger
@@ -28,10 +28,10 @@ type Pool struct {
 // NewPool - Creates new instance of Pool
 func NewPool(c *core.Adapter) *Pool {
 	return &Pool{
-		Subscribe:      make(chan SubscribeRequest, 4),
-		Unsubscribe:    make(chan SubscribeRequest, 4),
-		UnsubscribeAll: make(chan SubscribeRequest, 4),
-		Publish:        make(chan PublishRequest, 4),
+		Subscribe:      make(chan core.SubscribeRequest[*Client], 4),
+		Unsubscribe:    make(chan core.SubscribeRequest[*Client], 4),
+		UnsubscribeAll: make(chan core.SubscribeRequest[*Client], 4),
+		Publish:        make(chan core.PublishRequest[*Client], 4),
 		core:           c,
 		clientsMap:     make(map[string]*Client),
 		Logging:        c.GetLogger(),
@@ -81,13 +81,13 @@ func (p *Pool) removeClientRefId(refId string) {
 // Start - Go Routine runs worker with shared Pool resources.
 func (p *Pool) Start() {
 
-	defer func() {
-		if err := recover(); err != nil {
-			p.Logging.Error("websocket::Pool.Start => unhandled exception: %+v", err)
-		}
-		p.Logging.Warn("Worker stopped")
-		p.Start()
-	}()
+	//defer func() {
+	//if err := recover(); err != nil {
+	//p.Logging.Error("websocket::Pool.Start => unhandled exception: %+v", err)
+	//}
+	//p.Logging.Warn("Worker stopped")
+	//p.Start()
+	//}()
 
 	for {
 		select {

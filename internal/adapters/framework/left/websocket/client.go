@@ -5,17 +5,20 @@ import (
 	"time"
 
 	"github.com/gorilla/websocket"
+	"github.com/josh-tracey/eventual-agent/internal/adapters/core"
 	"github.com/josh-tracey/eventual-agent/internal/profile"
 )
 
 type Client struct {
+	core.CoreClient
 	ID     string
 	Conn   *websocket.Conn
 	Pool   *Pool
 	Send   chan interface{}
-	RefID  string
 	closed bool
 }
+
+func (c *Client) isClient() {}
 
 func NewClient(id string, conn *websocket.Conn, pool *Pool) *Client {
 	return &Client{
@@ -24,10 +27,6 @@ func NewClient(id string, conn *websocket.Conn, pool *Pool) *Client {
 		Pool: pool,
 		Send: make(chan interface{}, 32),
 	}
-}
-
-func (c *Client) AddRefID(refID string) {
-	c.RefID = refID
 }
 
 func (c *Client) close() {
