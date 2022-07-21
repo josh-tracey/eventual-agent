@@ -81,13 +81,13 @@ func (p *Pool) removeClientRefId(refId string) {
 // Start - Go Routine runs worker with shared Pool resources.
 func (p *Pool) Start() {
 
-	//defer func() {
-	//if err := recover(); err != nil {
-	//p.Logging.Error("websocket::Pool.Start => unhandled exception: %+v", err)
-	//}
-	//p.Logging.Warn("Worker stopped")
-	//p.Start()
-	//}()
+	defer func() {
+		if err := recover(); err != nil {
+			p.Logging.Error("websocket::Pool.Start => unhandled exception: %+v", err)
+		}
+		p.Logging.Warn("Worker stopped")
+		p.Start()
+	}()
 
 	for {
 		select {
