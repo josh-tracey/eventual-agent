@@ -2,8 +2,10 @@ package message_queue
 
 import (
 	"testing"
+	"time"
 
 	"github.com/josh-tracey/eventual-agent/internal/adapters/core"
+	"github.com/patrickmn/go-cache"
 	"github.com/stretchr/testify/require"
 )
 
@@ -12,7 +14,8 @@ func TestMessageQueue(t *testing.T) {
 	t.Run("Enqueue", func(t *testing.T) {
 
 		t.Run("should enqueue a message", func(t *testing.T) {
-			adapter := NewAdapter()
+			cache := cache.New(5*time.Minute, 10*time.Minute)
+			adapter := NewAdapter(cache)
 			message := core.CloudEvent{
 				ID:     "123",
 				Type:   "test",
@@ -27,7 +30,8 @@ func TestMessageQueue(t *testing.T) {
 		})
 
 		t.Run("should return an error if the channel is not found", func(t *testing.T) {
-			adapter := NewAdapter()
+			cache := cache.New(5*time.Minute, 10*time.Minute)
+			adapter := NewAdapter(cache)
 			message := core.CloudEvent{
 				ID:     "123",
 				Type:   "test",
@@ -44,7 +48,8 @@ func TestMessageQueue(t *testing.T) {
 	t.Run("Dequeue", func(t *testing.T) {
 
 		t.Run("should dequeue a message", func(t *testing.T) {
-			adapter := NewAdapter()
+			cache := cache.New(5*time.Minute, 10*time.Minute)
+			adapter := NewAdapter(cache)
 			message := core.CloudEvent{
 				ID:     "123",
 				Type:   "test",
@@ -57,7 +62,8 @@ func TestMessageQueue(t *testing.T) {
 		})
 
 		t.Run("should return an error if the channel is not found", func(t *testing.T) {
-			adapter := NewAdapter()
+			cache := cache.New(5*time.Minute, 10*time.Minute)
+			adapter := NewAdapter(cache)
 			_, err := adapter.Dequeue("test", false)
 			require.Error(t, err)
 		})
@@ -67,7 +73,8 @@ func TestMessageQueue(t *testing.T) {
 	t.Run("Iter", func(t *testing.T) {
 
 		t.Run("should iterate over a message", func(t *testing.T) {
-			adapter := NewAdapter()
+			cache := cache.New(5*time.Minute, 10*time.Minute)
+			adapter := NewAdapter(cache)
 			message := core.CloudEvent{
 				ID:     "123",
 				Type:   "test",
@@ -80,7 +87,8 @@ func TestMessageQueue(t *testing.T) {
 		})
 
 		t.Run("should return an error if the channel is not found", func(t *testing.T) {
-			adapter := NewAdapter()
+			cache := cache.New(5*time.Minute, 10*time.Minute)
+			adapter := NewAdapter(cache)
 			message := core.CloudEvent{
 				ID:     "123",
 				Type:   "test",
