@@ -81,8 +81,10 @@ workflows:
             branches:
               only: 
                 - /release\/.*/ 
-            tags: 
-              only: /.*/
+            tags:
+              only:
+                - /^[0-9]*\.[0-9]*\.[0-9]*$/ # Any semver tag i.e. 1.0.0, 2.5.123 - (No beta tags 1.0.0-beta.0 or prefixes v1.0.0)
+
 
   eventual-agent:
     jobs:
