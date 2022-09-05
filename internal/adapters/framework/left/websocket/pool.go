@@ -5,8 +5,8 @@ import (
 	"time"
 
 	"github.com/josh-tracey/eventual-agent/internal/adapters/core"
-	"github.com/josh-tracey/eventual-agent/internal/logging"
 	"github.com/josh-tracey/eventual-agent/internal/profile"
+	"github.com/josh-tracey/scribe"
 )
 
 var (
@@ -21,7 +21,7 @@ type Pool struct {
 	Publish        chan core.PublishRequest[*Client]
 	core           *core.Adapter
 	clientsMap     map[string]*Client
-	Logging        *logging.Logger
+	Logging        *scribe.Logger
 	cLock          sync.RWMutex
 }
 

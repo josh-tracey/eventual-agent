@@ -3,7 +3,7 @@ package core
 import (
 	"testing"
 
-	"github.com/josh-tracey/eventual-agent/internal/logging"
+	"github.com/josh-tracey/scribe"
 	"github.com/stretchr/testify/require"
 )
 
@@ -43,7 +43,7 @@ func TestAdapter(t *testing.T) {
 	)
 
 	// Test
-	logger := logging.NewLogger()
+	logger := scribe.NewLogger()
 	adapt = NewAdapter(logger)
 
 	clientId1 := adapt.AddClient("10.0.0.5:8000", []string{"tempUpdates"})

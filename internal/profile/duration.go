@@ -4,12 +4,12 @@ import (
 	"os"
 	"time"
 
-	"github.com/josh-tracey/eventual-agent/internal/logging"
+	"github.com/josh-tracey/scribe"
 )
 
 var profiling = os.Getenv("PROFILING")
 
-func Duration(logger logging.Logger, invocation time.Time, name string) {
+func Duration(logger scribe.Logger, invocation time.Time, name string) {
 
 	if profiling == "true" {
 		elapsed := time.Since(invocation)

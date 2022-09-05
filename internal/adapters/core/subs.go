@@ -4,7 +4,7 @@ import (
 	"sync"
 
 	"github.com/google/uuid"
-	"github.com/josh-tracey/eventual-agent/internal/logging"
+	"github.com/josh-tracey/scribe"
 )
 
 var (
@@ -12,7 +12,7 @@ var (
 )
 
 type Adapter struct {
-	logger *logging.Logger
+	logger *scribe.Logger
 	Subs   map[string]*sub
 }
 
@@ -22,14 +22,14 @@ type sub struct {
 	clients []*string
 }
 
-func NewAdapter(logger *logging.Logger) *Adapter {
+func NewAdapter(logger *scribe.Logger) *Adapter {
 	return &Adapter{
 		logger: logger,
 		Subs:   make(map[string]*sub),
 	}
 }
 
-func (adapt *Adapter) GetLogger() *logging.Logger {
+func (adapt *Adapter) GetLogger() *scribe.Logger {
 	return adapt.logger
 }
 

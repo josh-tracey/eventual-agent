@@ -6,8 +6,8 @@ import (
 	"net/http"
 
 	"github.com/josh-tracey/eventual-agent/internal/adapters/core"
-	"github.com/josh-tracey/eventual-agent/internal/logging"
 	"github.com/josh-tracey/eventual-agent/internal/ports"
+	"github.com/josh-tracey/scribe"
 )
 
 type Adapter struct {
@@ -29,7 +29,7 @@ func (a *Adapter) ListenAndServe() {
 	a.core.GetLogger().Info("Listening on 0.0.0.0:8080")
 	err := http.ListenAndServe(":8080", nil)
 	if err != nil {
-		log.Fatal(logging.FgRed, "Fatal: ", logging.Reset, err)
+		log.Fatal(scribe.FgRed, "Fatal: ", scribe.Reset, err)
 	}
 }
 
