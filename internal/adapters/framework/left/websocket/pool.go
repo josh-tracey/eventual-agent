@@ -5,7 +5,6 @@ import (
 	"time"
 
 	"github.com/josh-tracey/eventual-agent/internal/adapters/core"
-	"github.com/josh-tracey/eventual-agent/internal/profile"
 	"github.com/josh-tracey/scribe"
 )
 
@@ -111,7 +110,7 @@ func (p *Pool) Start() {
 					}
 				}
 			}
-			profile.Duration(*p.Logging, start, "Pool::Start::Publish")
+			p.Logging.Duration(start, "Pool::Start::Publish")
 
 		case r := <-p.Subscribe:
 			p.Logging.Trace("websocket::Pool.Start.Subscribe => Received subscribe event for channels '%s'", r.Channels)

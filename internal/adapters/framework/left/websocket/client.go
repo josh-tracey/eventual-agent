@@ -6,7 +6,6 @@ import (
 
 	"github.com/gorilla/websocket"
 	"github.com/josh-tracey/eventual-agent/internal/adapters/core"
-	"github.com/josh-tracey/eventual-agent/internal/profile"
 )
 
 type Client struct {
@@ -65,7 +64,7 @@ func dispatch(c *Client, data map[string]interface{}) {
 		}
 	}()
 
-	defer profile.Duration(*c.Pool.Logging, time.Now(), "Client::ReadListen::dispatch")
+	defer c.Pool.Logging.Duration(time.Now(), "Client::ReadListen::dispatch")
 
 	switch data["type"].(string) {
 	case "publish":
