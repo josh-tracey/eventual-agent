@@ -1,0 +1,14 @@
+syntax = "proto3";
+
+option go_package =  "./pb";
+
+import "grpc_msg.proto";
+
+service ClientService {
+    rpc Subscribe(EventSubRequest) returns (EventSubResponse) {};
+    rpc Publish(EventPubRequest) returns (EventPubResponse) {};
+}
+
+service PublisherService {
+    rpc Publish(EventPubRequest) returns (EventPubResponse) {};
+}
