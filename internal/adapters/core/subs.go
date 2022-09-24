@@ -4,169 +4,72 @@ import (
 	"sync"
 
 	"github.com/google/uuid"
-	"github.com/josh-tracey/scribe"
 )
-
-var (
-	lock sync.RWMutex
-)
-
-type Adapter struct {
-	logger *scribe.Logger
-	Subs   map[string]*sub
-}
 
 // Sub - Represents a Subscription
 type sub struct {
 	ID      string
-	clients []*string
-}
-
-func NewAdapter(logger *scribe.Logger) *Adapter {
-	return &Adapter{
-		logger: logger,
-		Subs:   make(map[string]*sub),
-	}
-}
-
-func (adapt *Adapter) GetLogger() *scribe.Logger {
-	return adapt.logger
-}
-
-// GetSub - Thread Safe method of getting a Sub
-func (adapt *Adapter) GetSub(channel string) *sub {
-	defer func() {
-		if r := recover(); r != nil {
-			adapt.logger.Error("core::Adapter.GetSub => %s", r)
-		}
-		lock.RUnlock()
-	}()
-
-	lock.RLock()
-	if _, ok := adapt.Subs[channel]; !ok {
-		adapt.Subs[channel] = newSub(channel)
-	}
-
-	return adapt.Subs[channel]
-}
-
-// Remove - Thread Safe method of removing a channel from Sub
-func (adapt *Adapter) Remove(channel string) {
-	defer func() {
-		if r := recover(); r != nil {
-			adapt.logger.Error("core::Adapter.Remove => %s", r)
-		}
-		lock.Unlock()
-	}()
-
-	lock.Lock()
-	delete(adapt.Subs, channel)
-}
-
-func (adapt *Adapter) RemoveClientId(client string) {
-	defer func() {
-		if r := recover(); r != nil {
-			adapt.logger.Error("core::Adapter.RemoveClientId => %s", r)
-		}
-	}()
-
-	var done chan bool = make(chan bool)
-	go func() {
-		lock.Lock()
-		for _, v := range adapt.Subs {
-			for i, clientId := range v.clients {
-				if *clientId == client {
-					v.clients = remove(v.clients, i)
-				}
-			}
-		}
-		done <- true
-		close(done)
-		lock.Unlock()
-	}()
-	<-done
-}
-
-func (adapt *Adapter) GetClients() []string {
-	defer func() {
-		if r := recover(); r != nil {
-			adapt.logger.Error("core::Adapter.GetClients => %s", r)
-		}
-	}()
-
-	var clients []string
-	for _, sub := range adapt.Subs {
-		clients = append(clients, sub.GetClients()...)
-	}
-	return clients
-}
-
-func (adapt *Adapter) AddClient(ID string, channels []string) string {
-	defer func() {
-		if r := recover(); r != nil {
-			adapt.logger.Error("core::Adapter.AddClients => %s", r)
-		}
-	}()
-
-	var client string
-	for _, channel := range channels {
-		sub := adapt.GetSub(channel)
-		client = sub.AddClient(&ID)
-	}
-	return client
-}
-
-func (adapt *Adapter) RemoveClient(ID string, channels []string) {
-	defer func() {
-		if r := recover(); r != nil {
-			adapt.logger.Error("core::Adapter.RemoveClient => %s", r)
-		}
-	}()
-
-	for _, channel := range channels {
-		adapt.GetSub(channel).RemoveClientId(ID)
-	}
+	clients [][]*string
+	lock    sync.RWMutex
 }
 
 // NewSub - Creates an instance of Sub
 func newSub(id string) *sub {
 	return &sub{
 		ID:      id,
-		clients: []*string{},
+		clients: [][]*string{},
+		lock:    sync.RWMutex{},
 	}
 }
 
 // AddClient - Thread Safe method of adding a client to Sub
 func (s *sub) AddClient(ID *string) string {
-	lock.Lock()
-	id := uuid.New().String()
-	s.clients = append(s.clients, &id)
-	lock.Unlock()
+	s.lock.Lock()
+	defer s.lock.Unlock()
+	id := uuid.NewString()
+	s.clients = append(s.clients, []*string{&id, ID})
 	return id
+}
+
+func (s *sub) GetClient(ID string) []*string {
+	s.lock.RLock()
+	defer s.lock.RUnlock()
+	var clients []*string
+	for _, client := range s.clients {
+		if s.ID == ID {
+			clients = append(clients, client[0])
+		}
+	}
+	return clients
 }
 
 // GetClients - Thread Safe method of getting clients from Sub
 func (s *sub) GetClients() []string {
-	lock.RLock()
+	s.lock.RLock()
+	defer s.lock.RUnlock()
 	var clients []string
 	for _, client := range s.clients {
 		if client != nil {
-			clients = append(clients, *client)
+			clients = append(clients, *client[1])
 		}
 	}
-	lock.RUnlock()
 	return clients
 }
 
 // RemoveClientId - Thread Safe method of removing a client from Sub
 func (s *sub) RemoveClientId(client string) {
-	lock.Lock()
+	s.lock.Lock()
+	defer s.lock.Unlock()
 	for i, clientId := range s.clients {
-		if *clientId == client {
-			s.clients = remove(s.clients, i)
+		if *clientId[1] == client {
+			s.clients = removeArr(s.clients, i)
 		}
 	}
-	lock.Unlock()
+}
+
+func removeArr(s [][]*string, i int) [][]*string {
+	s[i] = s[len(s)-1]
+	return s[:len(s)-1]
 }
 
 func remove(s []*string, i int) []*string {

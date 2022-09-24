@@ -1,5 +1,5 @@
 package ports
 
-type WebSocketPort interface {
+type PeerClient interface {
 	ListenAndServe()
 }

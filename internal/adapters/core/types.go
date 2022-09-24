@@ -22,14 +22,16 @@ func (c *CoreClient) AddRefID(refID string) {
 
 // PublishEvent - Publish incoming message type
 type PublishEvent struct {
-	Type     string     `json:"type"`
-	Channels []string   `json:"channels"`
-	Event    CloudEvent `json:"event"`
+	Type    string     `json:"type"`
+	Token   string     `json:"token"`
+	Channel string     `json:"channel"`
+	Event   CloudEvent `json:"event"`
 }
 
 // SubscribeMessage - Subscribe incoming message type
 type SubscribeMessage struct {
 	Type     string   `json:"type"`
+	Token    string   `json:"token"`
 	Channels []string `json:"channels"`
 }
 
@@ -37,17 +39,28 @@ func (p PublishEvent) isMessage() {}
 
 func (p SubscribeMessage) isMessage() {}
 
+type PeerRequest struct {
+	PeerAddr  string
+	Channel   string
+	Ephemeral bool
+}
+
+type PeerEvent struct {
+	PeerServer string
+	Event      CloudEvent
+}
+
 // CloudEvent - https://github.com/cloudevents/spec/blob/v1.0.1/spec.md
 type CloudEvent struct {
-	ID              string                 `json:"id"`
-	Source          string                 `json:"source"`
-	Type            string                 `json:"type"`
-	Subject         string                 `json:"subject"`
-	Data            map[string]interface{} `json:"data"`
-	DataContentType string                 `json:"datacontenttype"`
-	Time            string                 `json:"time"`
-	SpecVersion     string                 `json:"specversion"`
-	Meta            map[string]interface{} `json:"meta"`
+	ID              string `json:"id"`
+	Source          string `json:"source"`
+	Type            string `json:"type"`
+	Subject         string `json:"subject"`
+	Data            string `json:"data"`
+	DataContentType string `json:"datacontenttype"`
+	Time            string `json:"time"`
+	SpecVersion     string `json:"specversion"`
+	Meta            string `json:"meta"`
 }
 
 type SubscribeRequest[T any] struct {

@@ -11,22 +11,24 @@ import (
 )
 
 type Adapter struct {
-	core *core.Adapter
+	core           *core.Adapter
+	grpcEventQueue chan *core.CloudEvent
 }
 
-func NewAdapter(c ports.SubjectPort) *Adapter {
+func NewAdapter(c ports.SubjectPort, grpcEventQueue chan *core.CloudEvent) *Adapter {
 	value, ok := c.(*core.Adapter)
 	if !ok {
 		c.GetLogger().Error("websocket::Adapter.NewAdapter => Failed to cast c to *core.Adapter")
 	}
 	return &Adapter{
-		core: value,
+		core:           value,
+		grpcEventQueue: grpcEventQueue,
 	}
 }
 
 func (a *Adapter) ListenAndServe() {
 	setupRoutes(a)
-	a.core.GetLogger().Info("Listening on 0.0.0.0:8080")
+	a.core.GetLogger().Info("Websocket Server Listening on 0.0.0.0:8080")
 	err := http.ListenAndServe(":8080", nil)
 	if err != nil {
 		log.Fatal(scribe.FgRed, "Fatal: ", scribe.Reset, err)
@@ -53,7 +55,7 @@ func serveWs(pool *Pool, w http.ResponseWriter, r *http.Request) {
 }
 
 func setupRoutes(a *Adapter) {
-	pool := NewPool(a.core)
+	pool := NewPool(a.core, a.grpcEventQueue)
 	for i := 1; i <= 32; i++ {
 		go pool.Start()
 	}

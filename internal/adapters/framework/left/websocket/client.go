@@ -2,11 +2,14 @@ package websocket
 
 import (
 	"encoding/json"
+	"errors"
+	"os"
+	"sync"
 	"time"
 
 	"github.com/gorilla/websocket"
 	"github.com/josh-tracey/eventual-agent/internal/adapters/core"
-	"github.com/josh-tracey/eventual-agent/internal/profile"
+	"github.com/josh-tracey/notary"
 )
 
 type Client struct {
@@ -16,16 +19,18 @@ type Client struct {
 	Pool   *Pool
 	Send   chan interface{}
 	closed bool
+	cLock  *sync.RWMutex
 }
 
 func (c *Client) isClient() {}
 
 func NewClient(id string, conn *websocket.Conn, pool *Pool) *Client {
 	return &Client{
-		ID:   id,
-		Conn: conn,
-		Pool: pool,
-		Send: make(chan interface{}, 32),
+		ID:    id,
+		Conn:  conn,
+		Pool:  pool,
+		Send:  make(chan interface{}, 32),
+		cLock: &sync.RWMutex{},
 	}
 }
 
@@ -36,7 +41,6 @@ func (c *Client) close() {
 			c.Pool.Logging.Error("websocket::Client.close => %s", r)
 		}
 	}()
-
 	if !c.closed {
 		if err := c.Conn.Close(); err != nil {
 			c.Pool.Logging.Trace("websocket was already closed: %+v", err)
@@ -48,16 +52,18 @@ func (c *Client) close() {
 
 var (
 	// Time allowed to write a message to the peer.
-	WriteWait = 10 * time.Second
+	WriteWait = 30 * time.Second
 	// Time allowed to read the next pong message from the peer.
-	PongWait = 30 * time.Second
+	PongWait = 60 * time.Second
 	// Send pings to peer with this period. Must be less than pongWait.
 	PingPeriod = (PongWait * 9) / 10
 	// Maximum message size allowed from peer.
 	MaxMessageSize int64 = 64 * 1024
+
+	jwtTokenSecret = os.Getenv("JWT_TOKEN_SECRET")
 )
 
-func dispatch(c *Client, data map[string]interface{}) {
+func dispatch(c *Client, data map[string]interface{}) error {
 
 	defer func() {
 		if r := recover(); r != nil {
@@ -65,22 +71,44 @@ func dispatch(c *Client, data map[string]interface{}) {
 		}
 	}()
 
-	defer profile.Duration(*c.Pool.Logging, time.Now(), "Client::ReadListen::dispatch")
+	defer c.Pool.Logging.Duration(time.Now(), "Client::ReadListen::dispatch")
 
-	switch data["type"].(string) {
-	case "publish":
-		c.Pool.Logging.Trace("dispatch => publish")
-		c.Pool.Publish <- *c.NewPublishRequest(data)
-	case "subscribe":
-		c.Pool.Logging.Trace("dispatch => subscribe")
-		c.Pool.Subscribe <- *c.NewSubscribeRequest(data)
-	case "unsubscribe":
-		c.Pool.Logging.Trace("dispatch => unsubscribe")
-		c.Pool.Unsubscribe <- *c.NewSubscribeRequest(data)
-	default:
-		c.Pool.Logging.Trace("dispatch => invalid request")
-		c.Conn.WriteJSON("Invalid Request")
+	token, ok := data["token"].(string)
+
+	if !ok {
+		c.Pool.Logging.Error("websocket::Client.dispatch => invalid or missing token")
+		return errors.New("invalid or missing token")
 	}
+
+	valid, err := notary.New(jwtTokenSecret).VerifyToken(token)
+	if err != nil {
+		c.Pool.Logging.Error("websocket::Client.dispatch => %s", err)
+		return err
+	}
+	if !valid {
+		c.Pool.Logging.Error("websocket::Client.dispatch => invalid token")
+		return errors.New("invalid token")
+	}
+
+	if valid {
+
+		switch data["type"].(string) {
+		case "publish":
+			c.Pool.Logging.Trace("dispatch => publish")
+			request := *c.NewPublishRequest(data)
+			c.Pool.Publish <- request
+		case "subscribe":
+			c.Pool.Logging.Trace("dispatch => subscribe")
+			c.Pool.Subscribe <- *c.NewSubscribeRequest(data)
+		case "unsubscribe":
+			c.Pool.Logging.Trace("dispatch => unsubscribe")
+			c.Pool.Unsubscribe <- *c.NewSubscribeRequest(data)
+		default:
+			c.Pool.Logging.Trace("dispatch => invalid request")
+			c.Conn.WriteJSON("Invalid Request")
+		}
+	}
+	return nil
 }
 
 func (c *Client) WriteListen() {
@@ -103,7 +131,9 @@ func (c *Client) WriteListen() {
 			c.Pool.Logging.Error("websocket::Client.WriteListen => %s", err)
 		}
 		ticker.Stop()
+		c.cLock.Lock()
 		c.close()
+		c.cLock.Unlock()
 	}()
 
 	for {
@@ -134,7 +164,9 @@ func (c *Client) ReadListen() {
 		if err := recover(); err != nil {
 			c.Pool.Logging.Error("websocket::Client.ReadListen => %s", err)
 		}
+		c.cLock.RLock()
 		c.close()
+		c.cLock.RUnlock()
 	}()
 	c.Conn.SetReadLimit(MaxMessageSize)
 	if err := c.Conn.SetReadDeadline(time.Now().Add(PongWait)); err != nil {
@@ -162,6 +194,10 @@ func (c *Client) ReadListen() {
 			c.Pool.Logging.Error("json.Unmarshal: %+v", err.Error())
 			break
 		}
-		dispatch(c, data)
+		err2 := dispatch(c, data)
+		if err2 != nil {
+			c.Pool.Logging.Error("dispatch: %+v", err2.Error())
+			break
+		}
 	}
 }

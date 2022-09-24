@@ -1,6 +1,8 @@
 package ports
 
-import "github.com/josh-tracey/eventual-agent/internal/adapters/core"
+import (
+	"github.com/josh-tracey/eventual-agent/internal/adapters/core"
+)
 
 type MessageQueuePort interface {
 	Enqueue(channel string, message core.CloudEvent)
