@@ -1,1 +1,1 @@
-go build -o build/ cmd/eventual-agent/eventual-agent.go
+go build --race -o build/ cmd/eventual-agent/eventual-agent.go

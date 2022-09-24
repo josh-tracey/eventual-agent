@@ -9,7 +9,8 @@ import "google/protobuf/timestamp.proto";
 
 message EventSubRequest {
     string token = 1;
-    string name = 2;
+    string channel = 2;
+    string peer_server = 3; // peer server address (ip:port)
 }
 
 message EventSubResponse {
@@ -19,7 +20,7 @@ message EventSubResponse {
 message EventPubRequest {
     string token = 1;
     string subscriptionId = 2;
-    string name = 3;
+    string channel = 3;
     CloudEvent data = 4;
 }
 
@@ -44,9 +45,13 @@ message CloudEvent {
   oneof  data {
     bytes binary_data = 6;
     string text_data = 7;
-    string json_data = 8;
-    google.protobuf.Any proto_data = 9;
+    google.protobuf.Any proto_data = 8;
   }
+
+
+  string time = 9; // Timestamp
+  string subject = 10; // optional sub topic of the event 
+  string schema_url = 11; // URI
 
   /**
    * The CloudEvent specification defines

@@ -5,13 +5,9 @@ import (
 )
 
 func NewPublishEvent(m map[string]interface{}) *core.PublishEvent {
-	channels, ok := m["channels"].([]interface{})
-	if !ok {
-		panic("channels is not a string slice")
-	}
 	return &core.PublishEvent{
-		Channels: core.ConvertToStringSlice(channels),
-		Event:    m["event"].(core.CloudEvent),
+		Channel: m["channel"].(string),
+		Event:   m["event"].(core.CloudEvent),
 	}
 }
 
@@ -33,22 +29,11 @@ func (c *Client) NewPublishRequest(m map[string]interface{}) *core.PublishReques
 	}()
 
 	event := m["event"].(map[string]interface{})
-	data := make(map[string]interface{})
-	for k, v := range event["data"].(map[string]interface{}) {
-		data[k] = v
-	}
 
-	meta := make(map[string]interface{})
-
-	if event["meta"] != nil {
-		for k, v := range event["meta"].(map[string]interface{}) {
-			meta[k] = v
-		}
-	}
-	channels, ok := m["channels"].([]interface{})
+	meta, ok := event["meta"].(string)
 
 	if !ok {
-		panic("channels is not a string slice")
+		meta = ""
 	}
 
 	subject, ok := event["subject"].(string)
@@ -59,18 +44,18 @@ func (c *Client) NewPublishRequest(m map[string]interface{}) *core.PublishReques
 
 	return &core.PublishRequest[*Client]{
 		PublishEvent: core.PublishEvent{
-			Type:     m["type"].(string),
-			Channels: core.ConvertToStringSlice(channels),
+			Type:    m["type"].(string),
+			Channel: m["channel"].(string),
 			Event: core.CloudEvent{
 				ID:              string(event["id"].(string)),
 				Source:          string(event["source"].(string)),
 				Type:            string(event["type"].(string)),
 				Subject:         string(subject),
-				Data:            data,
+				Data:            string(event["data"].(string)),
 				SpecVersion:     string(event["specversion"].(string)),
 				DataContentType: "application/json",
 				Time:            string(event["time"].(string)),
-				Meta:            meta,
+				Meta:            string(meta),
 			},
 		},
 		Client: c,
